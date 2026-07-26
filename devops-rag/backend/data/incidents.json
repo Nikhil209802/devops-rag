@@ -1,0 +1,4409 @@
+{
+  "incidents": [
+    {
+      "incident_id": "INC-001",
+      "title": "Payment API Returning HTTP 503",
+      "service": "Payment Service",
+      "category": "Database",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-01T15:13:00Z",
+      "description": "Users reported HTTP 503 errors while making online payments.",
+      "symptoms": [
+        "HTTP 503 responses",
+        "High database latency",
+        "Connection timeout",
+        "Payment failures"
+      ],
+      "logs": [
+        "ERROR: Database connection timeout",
+        "ERROR: Connection pool exhausted",
+        "WARN: Retry attempt failed"
+      ],
+      "affected_components": [
+        "Payment API",
+        "PostgreSQL Database"
+      ],
+      "root_cause": "Database connection pool exhaustion caused requests to timeout.",
+      "resolution": [
+        "Restart database service",
+        "Increase connection pool size",
+        "Restart Payment API"
+      ],
+      "preventive_actions": [
+        "Monitor connection pool usage",
+        "Configure autoscaling",
+        "Create alert for pool utilization >80%"
+      ],
+      "impact": "Customers were unable to complete online payments for approximately 15 minutes.",
+      "status": "Resolved",
+      "resolution_time": "15 minutes",
+      "keywords": [
+        "database",
+        "503",
+        "timeout",
+        "payment",
+        "postgres"
+      ]
+    },
+    {
+      "incident_id": "INC-002",
+      "title": "Replica Lag Causing Stale Reads",
+      "service": "Orders Service",
+      "category": "Database",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-01T22:26:00Z",
+      "description": "Read replicas fell significantly behind the primary, causing customers to see outdated order statuses.",
+      "symptoms": [
+        "Stale order status shown",
+        "Replica lag alert triggered",
+        "Increased customer complaints"
+      ],
+      "logs": [
+        "WARN: Replica lag 340s exceeds threshold",
+        "ERROR: Read query returned stale row"
+      ],
+      "affected_components": [
+        "MySQL Read Replica",
+        "Orders API"
+      ],
+      "root_cause": "A long-running analytics query on the replica blocked replication apply threads.",
+      "resolution": [
+        "Kill long-running analytics query",
+        "Move analytics workload to dedicated replica",
+        "Restart replication"
+      ],
+      "preventive_actions": [
+        "Route analytics queries to separate replica",
+        "Set query timeout limits",
+        "Alert on replica lag >30s"
+      ],
+      "impact": "Order status inaccuracies visible to ~2,000 users for 40 minutes.",
+      "status": "Resolved",
+      "resolution_time": "40 minutes",
+      "keywords": [
+        "database",
+        "replica",
+        "lag",
+        "mysql",
+        "stale reads"
+      ]
+    },
+    {
+      "incident_id": "INC-003",
+      "title": "Deadlocks Spiking on Orders Table",
+      "service": "Orders Service",
+      "category": "Database",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-02T05:39:00Z",
+      "description": "Application began throwing frequent deadlock exceptions during checkout.",
+      "symptoms": [
+        "Deadlock exceptions in logs",
+        "Checkout failures",
+        "Increased transaction retries"
+      ],
+      "logs": [
+        "ERROR: Deadlock found when trying to get lock",
+        "ERROR: Transaction rolled back"
+      ],
+      "affected_components": [
+        "Orders Database",
+        "Checkout Service"
+      ],
+      "root_cause": "A new batch job updated the orders table in a different lock order than the checkout transaction, causing deadlocks.",
+      "resolution": [
+        "Roll back batch job deployment",
+        "Reorder update statements to match lock order",
+        "Redeploy checkout service"
+      ],
+      "preventive_actions": [
+        "Add deadlock detection alerting",
+        "Code review for lock ordering",
+        "Load test batch jobs before release"
+      ],
+      "impact": "8% of checkout attempts failed over a 25 minute window.",
+      "status": "Resolved",
+      "resolution_time": "25 minutes",
+      "keywords": [
+        "database",
+        "deadlock",
+        "mysql",
+        "checkout",
+        "transactions"
+      ]
+    },
+    {
+      "incident_id": "INC-004",
+      "title": "Disk Full on Primary Database Node",
+      "service": "User Service",
+      "category": "Database",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-02T12:52:00Z",
+      "description": "Primary database node stopped accepting writes after running out of disk space.",
+      "symptoms": [
+        "Write failures",
+        "Disk usage at 100%",
+        "Database refusing new connections"
+      ],
+      "logs": [
+        "ERROR: could not extend file: No space left on device",
+        "FATAL: the database system is not accepting connections"
+      ],
+      "affected_components": [
+        "PostgreSQL Primary",
+        "User Service"
+      ],
+      "root_cause": "Unbounded growth of WAL logs due to a stuck replication slot filled up disk space.",
+      "resolution": [
+        "Drop stuck replication slot",
+        "Clear old WAL archives",
+        "Expand disk volume",
+        "Restart database"
+      ],
+      "preventive_actions": [
+        "Alert on disk usage >75%",
+        "Monitor replication slot lag",
+        "Automate WAL archive cleanup"
+      ],
+      "impact": "All write operations failed for 30 minutes, affecting new user registrations.",
+      "status": "Resolved",
+      "resolution_time": "30 minutes",
+      "keywords": [
+        "database",
+        "disk full",
+        "wal",
+        "postgres",
+        "replication slot"
+      ]
+    },
+    {
+      "incident_id": "INC-005",
+      "title": "Slow Queries Degrading Checkout Performance",
+      "service": "Checkout Service",
+      "category": "Database",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-02T20:05:00Z",
+      "description": "Checkout page response times increased significantly during peak traffic.",
+      "symptoms": [
+        "High p95 latency",
+        "Slow query log entries",
+        "CPU spike on database"
+      ],
+      "logs": [
+        "WARN: Query execution time 4200ms exceeds threshold",
+        "INFO: Sequential scan on orders table"
+      ],
+      "affected_components": [
+        "Checkout Database",
+        "Order Query Service"
+      ],
+      "root_cause": "A missing index on a recently added column forced full table scans on a frequently used query.",
+      "resolution": [
+        "Create missing index",
+        "Analyze table statistics",
+        "Restart query planner cache"
+      ],
+      "preventive_actions": [
+        "Require index review in migration PRs",
+        "Add slow query alerting",
+        "Run periodic EXPLAIN ANALYZE audits"
+      ],
+      "impact": "Checkout latency increased 6x for approximately 1 hour during peak hours.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "database",
+        "slow query",
+        "index",
+        "postgres",
+        "performance"
+      ]
+    },
+    {
+      "incident_id": "INC-006",
+      "title": "Failover Did Not Trigger After Primary Crash",
+      "service": "Inventory Service",
+      "category": "Database",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-03T03:18:00Z",
+      "description": "Database primary crashed but automatic failover to standby did not occur, causing an extended outage.",
+      "symptoms": [
+        "Complete database unavailability",
+        "Failover health check failing silently",
+        "Inventory API errors"
+      ],
+      "logs": [
+        "FATAL: connection to server was lost",
+        "ERROR: no standby promoted"
+      ],
+      "affected_components": [
+        "PostgreSQL Cluster",
+        "Inventory Service"
+      ],
+      "root_cause": "Misconfigured failover agent had a stale configuration pointing to a decommissioned standby node.",
+      "resolution": [
+        "Manually promote healthy standby",
+        "Update failover agent configuration",
+        "Restart inventory service connections"
+      ],
+      "preventive_actions": [
+        "Test failover quarterly",
+        "Validate standby configuration in CI",
+        "Add alert for failover agent health"
+      ],
+      "impact": "Inventory service was fully unavailable for 22 minutes.",
+      "status": "Resolved",
+      "resolution_time": "22 minutes",
+      "keywords": [
+        "database",
+        "failover",
+        "postgres",
+        "high availability",
+        "outage"
+      ]
+    },
+    {
+      "incident_id": "INC-007",
+      "title": "Connection Pool Misconfiguration After Deployment",
+      "service": "Notification Service",
+      "category": "Database",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-03T10:31:00Z",
+      "description": "New deployment reduced database connection pool size, causing widespread connection errors.",
+      "symptoms": [
+        "Connection refused errors",
+        "Notification delivery failures",
+        "Elevated error rate on dashboard"
+      ],
+      "logs": [
+        "ERROR: FATAL: too many connections for role",
+        "ERROR: connection pool timeout"
+      ],
+      "affected_components": [
+        "Notification Service",
+        "PostgreSQL Database"
+      ],
+      "root_cause": "A configuration file rollback reverted connection pool size to a default value far below production needs.",
+      "resolution": [
+        "Restore correct pool size configuration",
+        "Redeploy notification service",
+        "Verify connection metrics"
+      ],
+      "preventive_actions": [
+        "Add configuration validation step to CI/CD",
+        "Version control config with change alerts",
+        "Set minimum pool size safeguard"
+      ],
+      "impact": "20% of notifications were delayed or dropped for 35 minutes.",
+      "status": "Resolved",
+      "resolution_time": "35 minutes",
+      "keywords": [
+        "database",
+        "connection pool",
+        "configuration",
+        "deployment",
+        "notifications"
+      ]
+    },
+    {
+      "incident_id": "INC-008",
+      "title": "Backup Job Locking Production Tables",
+      "service": "Reporting Service",
+      "category": "Database",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-03T17:44:00Z",
+      "description": "Nightly backup process held long-running locks that blocked reporting queries.",
+      "symptoms": [
+        "Reporting queries timing out",
+        "Lock wait warnings",
+        "Backup job running longer than expected"
+      ],
+      "logs": [
+        "WARN: lock wait timeout exceeded",
+        "INFO: pg_dump running for 2h15m"
+      ],
+      "affected_components": [
+        "Reporting Database",
+        "Backup Job"
+      ],
+      "root_cause": "Backup job used a table-level lock instead of a consistent snapshot, blocking concurrent reads.",
+      "resolution": [
+        "Terminate backup job",
+        "Switch to snapshot-based backup",
+        "Rerun backup during low-traffic window"
+      ],
+      "preventive_actions": [
+        "Migrate to logical replication for backups",
+        "Schedule backups outside peak hours",
+        "Add lock contention monitoring"
+      ],
+      "impact": "Reporting dashboards were unavailable for 50 minutes.",
+      "status": "Resolved",
+      "resolution_time": "50 minutes",
+      "keywords": [
+        "database",
+        "backup",
+        "locking",
+        "reporting",
+        "postgres"
+      ]
+    },
+    {
+      "incident_id": "INC-009",
+      "title": "Schema Migration Caused Downtime",
+      "service": "Catalog Service",
+      "category": "Database",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-04T00:57:00Z",
+      "description": "A schema migration to add a column locked the products table for an extended period.",
+      "symptoms": [
+        "Catalog API timeouts",
+        "Migration stuck in progress",
+        "Table lock held"
+      ],
+      "logs": [
+        "ERROR: canceling statement due to lock timeout",
+        "INFO: ALTER TABLE products still running"
+      ],
+      "affected_components": [
+        "Catalog Database",
+        "Migration Tool"
+      ],
+      "root_cause": "Migration used a blocking ALTER TABLE on a large table without an online schema change tool.",
+      "resolution": [
+        "Cancel migration",
+        "Use online schema migration tool (gh-ost)",
+        "Re-run migration during maintenance window"
+      ],
+      "preventive_actions": [
+        "Mandate online migration tooling for large tables",
+        "Test migrations on staging with production-scale data",
+        "Add migration duration alerts"
+      ],
+      "impact": "Catalog browsing was degraded for 45 minutes.",
+      "status": "Resolved",
+      "resolution_time": "45 minutes",
+      "keywords": [
+        "database",
+        "migration",
+        "schema",
+        "lock",
+        "catalog"
+      ]
+    },
+    {
+      "incident_id": "INC-010",
+      "title": "Corrupted Index Causing Query Errors",
+      "service": "Search Service",
+      "category": "Database",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-04T08:10:00Z",
+      "description": "Search queries began returning inconsistent results and errors after a storage failure.",
+      "symptoms": [
+        "Query errors referencing index corruption",
+        "Inconsistent search results",
+        "Increased error logs"
+      ],
+      "logs": [
+        "ERROR: index \"idx_products_name\" contains corrupted data",
+        "ERROR: could not read block in index"
+      ],
+      "affected_components": [
+        "Search Database",
+        "Search API"
+      ],
+      "root_cause": "An unclean shutdown during a storage failure corrupted a secondary index.",
+      "resolution": [
+        "Rebuild corrupted index",
+        "Validate table integrity",
+        "Restart search service"
+      ],
+      "preventive_actions": [
+        "Enable checksums on database",
+        "Improve storage redundancy",
+        "Schedule regular integrity checks"
+      ],
+      "impact": "Search returned incomplete or incorrect results for 1.5 hours.",
+      "status": "Resolved",
+      "resolution_time": "1.5 hours",
+      "keywords": [
+        "database",
+        "index corruption",
+        "search",
+        "integrity",
+        "storage"
+      ]
+    },
+    {
+      "incident_id": "INC-011",
+      "title": "Out of Memory Kill on Checkout Pods",
+      "service": "Checkout Service",
+      "category": "Memory",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-04T15:23:00Z",
+      "description": "Checkout pods were repeatedly OOMKilled during a flash sale event.",
+      "symptoms": [
+        "Pods restarting frequently",
+        "OOMKilled status in pod events",
+        "Checkout errors spiking"
+      ],
+      "logs": [
+        "ERROR: OOMKilled",
+        "WARN: memory usage 98% of limit"
+      ],
+      "affected_components": [
+        "Checkout Pods",
+        "Kubernetes Node"
+      ],
+      "root_cause": "Memory limits were set too low for the increased load from the flash sale, causing repeated OOM kills.",
+      "resolution": [
+        "Increase pod memory limits",
+        "Scale out additional replicas",
+        "Restart affected pods"
+      ],
+      "preventive_actions": [
+        "Load test before major sales events",
+        "Set up predictive autoscaling",
+        "Add memory usage alerting at 80%"
+      ],
+      "impact": "Checkout errors affected roughly 12% of users for 20 minutes.",
+      "status": "Resolved",
+      "resolution_time": "20 minutes",
+      "keywords": [
+        "memory",
+        "oom",
+        "kubernetes",
+        "checkout",
+        "scaling"
+      ]
+    },
+    {
+      "incident_id": "INC-012",
+      "title": "Memory Leak in Recommendation Engine",
+      "service": "Recommendation Service",
+      "category": "Memory",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-04T22:36:00Z",
+      "description": "Recommendation service memory usage grew steadily until pods crashed.",
+      "symptoms": [
+        "Gradual memory increase over hours",
+        "Pod crashes after ~6 hours uptime",
+        "Slow response times before crash"
+      ],
+      "logs": [
+        "WARN: heap usage approaching limit",
+        "ERROR: java.lang.OutOfMemoryError: Java heap space"
+      ],
+      "affected_components": [
+        "Recommendation Service",
+        "JVM"
+      ],
+      "root_cause": "A caching library was not evicting stale entries, causing unbounded heap growth.",
+      "resolution": [
+        "Roll back to previous service version",
+        "Patch caching library configuration",
+        "Restart affected pods"
+      ],
+      "preventive_actions": [
+        "Add heap dump analysis to CI for memory regressions",
+        "Set cache eviction policy with max size",
+        "Monitor heap trend over time"
+      ],
+      "impact": "Recommendations were degraded intermittently over 3 hours.",
+      "status": "Resolved",
+      "resolution_time": "3 hours",
+      "keywords": [
+        "memory",
+        "leak",
+        "java",
+        "heap",
+        "recommendation"
+      ]
+    },
+    {
+      "incident_id": "INC-013",
+      "title": "Redis Memory Exhaustion Blocking Writes",
+      "service": "Session Service",
+      "category": "Memory",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-05T05:49:00Z",
+      "description": "Redis instance hit its maxmemory limit, causing session writes to fail.",
+      "symptoms": [
+        "OOM command not allowed errors",
+        "Users logged out unexpectedly",
+        "Session creation failures"
+      ],
+      "logs": [
+        "ERROR: OOM command not allowed when used memory > maxmemory",
+        "WARN: eviction policy noeviction active"
+      ],
+      "affected_components": [
+        "Redis",
+        "Session Service"
+      ],
+      "root_cause": "Session keys were created without TTLs, causing unbounded growth of memory usage.",
+      "resolution": [
+        "Set eviction policy to allkeys-lru temporarily",
+        "Add TTL to all session keys",
+        "Flush stale session data"
+      ],
+      "preventive_actions": [
+        "Enforce TTL on all cache writes via code review",
+        "Monitor memory usage against maxmemory",
+        "Alert at 80% memory utilization"
+      ],
+      "impact": "Approximately 5,000 users were logged out over 25 minutes.",
+      "status": "Resolved",
+      "resolution_time": "25 minutes",
+      "keywords": [
+        "memory",
+        "redis",
+        "session",
+        "ttl",
+        "eviction"
+      ]
+    },
+    {
+      "incident_id": "INC-014",
+      "title": "Node Memory Pressure Causing Pod Evictions",
+      "service": "Multiple Services",
+      "category": "Memory",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-05T13:02:00Z",
+      "description": "A worker node experienced memory pressure, causing Kubernetes to evict multiple pods.",
+      "symptoms": [
+        "Pods in Evicted state",
+        "Node reporting MemoryPressure condition",
+        "Service disruptions across namespaces"
+      ],
+      "logs": [
+        "WARN: Node condition MemoryPressure=True",
+        "EVENT: Evicted pod due to node memory pressure"
+      ],
+      "affected_components": [
+        "Kubernetes Node",
+        "Kubelet"
+      ],
+      "root_cause": "A misbehaving sidecar container without memory limits consumed excessive memory on the node.",
+      "resolution": [
+        "Cordon and drain affected node",
+        "Set memory limits on sidecar container",
+        "Reschedule evicted pods"
+      ],
+      "preventive_actions": [
+        "Enforce resource limits on all containers via admission policy",
+        "Set up node memory pressure alerts",
+        "Regularly audit containers without limits"
+      ],
+      "impact": "Multiple services experienced brief disruptions over 15 minutes.",
+      "status": "Resolved",
+      "resolution_time": "15 minutes",
+      "keywords": [
+        "memory",
+        "kubernetes",
+        "eviction",
+        "node pressure",
+        "sidecar"
+      ]
+    },
+    {
+      "incident_id": "INC-015",
+      "title": "Buffer Cache Growth Slowing Application Server",
+      "service": "Analytics Service",
+      "category": "Memory",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-05T20:15:00Z",
+      "description": "Analytics service became sluggish as available memory for application processes decreased.",
+      "symptoms": [
+        "Increased response latency",
+        "High memory usage reported by monitoring",
+        "Swap usage increasing"
+      ],
+      "logs": [
+        "WARN: available memory below 10%",
+        "INFO: swap usage increasing steadily"
+      ],
+      "affected_components": [
+        "Analytics Service",
+        "Host OS"
+      ],
+      "root_cause": "A misconfigured log aggregation agent was buffering large volumes of data in memory before flushing to disk.",
+      "resolution": [
+        "Restart log aggregation agent",
+        "Reduce in-memory buffer size",
+        "Clear swap"
+      ],
+      "preventive_actions": [
+        "Tune log agent buffer settings",
+        "Add swap usage alerts",
+        "Monitor memory allocation by process"
+      ],
+      "impact": "Analytics dashboards were slow to load for about 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "memory",
+        "buffer cache",
+        "swap",
+        "logging agent",
+        "performance"
+      ]
+    },
+    {
+      "incident_id": "INC-016",
+      "title": "Memory Fragmentation Causing Redis Slowdowns",
+      "service": "Cart Service",
+      "category": "Memory",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-06T03:28:00Z",
+      "description": "Redis instance backing the shopping cart service showed increasing latency despite low overall memory usage.",
+      "symptoms": [
+        "High Redis latency",
+        "High mem_fragmentation_ratio",
+        "Cart update delays"
+      ],
+      "logs": [
+        "WARN: mem_fragmentation_ratio 2.8",
+        "INFO: latency spikes on SET commands"
+      ],
+      "affected_components": [
+        "Redis",
+        "Cart Service"
+      ],
+      "root_cause": "Frequent allocation and deallocation of variable-sized keys caused significant memory fragmentation.",
+      "resolution": [
+        "Trigger active memory defragmentation",
+        "Restart Redis with defrag enabled",
+        "Adjust key expiration strategy"
+      ],
+      "preventive_actions": [
+        "Enable active-defrag in Redis config",
+        "Standardize key sizes where possible",
+        "Monitor fragmentation ratio"
+      ],
+      "impact": "Cart updates were delayed by 2-3 seconds for approximately 40 minutes.",
+      "status": "Resolved",
+      "resolution_time": "40 minutes",
+      "keywords": [
+        "memory",
+        "redis",
+        "fragmentation",
+        "cart",
+        "latency"
+      ]
+    },
+    {
+      "incident_id": "INC-017",
+      "title": "Container Memory Limit Too Low After Right-Sizing",
+      "service": "Billing Service",
+      "category": "Memory",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-06T10:41:00Z",
+      "description": "Automated resource right-sizing reduced memory limits below actual usage, causing crash loops.",
+      "symptoms": [
+        "CrashLoopBackOff status",
+        "OOMKilled events",
+        "Billing job failures"
+      ],
+      "logs": [
+        "ERROR: OOMKilled",
+        "EVENT: Back-off restarting failed container"
+      ],
+      "affected_components": [
+        "Billing Service Pods",
+        "Kubernetes"
+      ],
+      "root_cause": "An automated resource optimization tool set memory requests/limits based on stale usage data from a low-traffic period.",
+      "resolution": [
+        "Manually override memory limits",
+        "Restart billing pods",
+        "Disable auto right-sizing for this workload"
+      ],
+      "preventive_actions": [
+        "Require manual review before applying auto right-sizing changes",
+        "Use peak usage window for sizing recommendations",
+        "Add crash loop alerting"
+      ],
+      "impact": "Billing job processing was delayed by 50 minutes.",
+      "status": "Resolved",
+      "resolution_time": "50 minutes",
+      "keywords": [
+        "memory",
+        "oom",
+        "right-sizing",
+        "billing",
+        "kubernetes"
+      ]
+    },
+    {
+      "incident_id": "INC-018",
+      "title": "Memory Spike from Unbounded Query Result Set",
+      "service": "Reporting API",
+      "category": "Memory",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-06T17:54:00Z",
+      "description": "A reporting endpoint loaded an entire large dataset into memory, causing a spike and slow responses.",
+      "symptoms": [
+        "Sudden memory spike",
+        "Slow API responses",
+        "Garbage collection pauses"
+      ],
+      "logs": [
+        "WARN: GC pause 3200ms",
+        "INFO: loaded 2.1M rows into memory"
+      ],
+      "affected_components": [
+        "Reporting API",
+        "Application Server"
+      ],
+      "root_cause": "An unbounded query without pagination returned millions of rows, loading them entirely into application memory.",
+      "resolution": [
+        "Kill long-running request",
+        "Add pagination to endpoint",
+        "Restart application server"
+      ],
+      "preventive_actions": [
+        "Enforce pagination limits on all list endpoints",
+        "Add response size monitoring",
+        "Code review checklist for query bounds"
+      ],
+      "impact": "Reporting API was unresponsive for approximately 20 minutes.",
+      "status": "Resolved",
+      "resolution_time": "20 minutes",
+      "keywords": [
+        "memory",
+        "pagination",
+        "reporting",
+        "garbage collection",
+        "spike"
+      ]
+    },
+    {
+      "incident_id": "INC-019",
+      "title": "Memory Cgroup Limit Misconfigured on New Node Pool",
+      "service": "Platform Services",
+      "category": "Memory",
+      "severity": "Low",
+      "environment": "Staging",
+      "timestamp": "2026-06-07T01:07:00Z",
+      "description": "Newly provisioned node pool had incorrect cgroup memory limits, causing early OOM kills in staging tests.",
+      "symptoms": [
+        "Frequent OOM kills in staging",
+        "Pods restarting before completing tests",
+        "Lower than expected available memory reported"
+      ],
+      "logs": [
+        "ERROR: OOMKilled",
+        "WARN: cgroup memory.max set to 512Mi unexpectedly"
+      ],
+      "affected_components": [
+        "Staging Node Pool",
+        "Cgroups Configuration"
+      ],
+      "root_cause": "A misapplied node bootstrap script set a much lower default cgroup memory limit than intended for the instance type.",
+      "resolution": [
+        "Correct bootstrap script configuration",
+        "Re-provision affected nodes",
+        "Re-run failed staging tests"
+      ],
+      "preventive_actions": [
+        "Add validation step for node bootstrap configs",
+        "Test node pool provisioning in a sandbox first",
+        "Add node capacity verification checks"
+      ],
+      "impact": "Staging test suite was delayed by 2 hours.",
+      "status": "Resolved",
+      "resolution_time": "2 hours",
+      "keywords": [
+        "memory",
+        "cgroups",
+        "staging",
+        "node pool",
+        "configuration"
+      ]
+    },
+    {
+      "incident_id": "INC-020",
+      "title": "Memory Exhaustion During Bulk Import Job",
+      "service": "Data Pipeline Service",
+      "category": "Memory",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-07T08:20:00Z",
+      "description": "A scheduled bulk data import job consumed all available memory on its worker, halting processing.",
+      "symptoms": [
+        "Job worker unresponsive",
+        "Memory usage at 100%",
+        "Import job stalled midway"
+      ],
+      "logs": [
+        "ERROR: Cannot allocate memory",
+        "WARN: worker process killed by OOM killer"
+      ],
+      "affected_components": [
+        "Data Pipeline Worker",
+        "Import Job"
+      ],
+      "root_cause": "The import job read the entire input file into memory instead of streaming it in chunks.",
+      "resolution": [
+        "Restart import job with chunked processing",
+        "Kill stuck worker process",
+        "Resume import from last checkpoint"
+      ],
+      "preventive_actions": [
+        "Refactor import job to stream data in batches",
+        "Add memory usage alerts for batch jobs",
+        "Set job-level resource limits"
+      ],
+      "impact": "Nightly data import was delayed by 3 hours.",
+      "status": "Resolved",
+      "resolution_time": "3 hours",
+      "keywords": [
+        "memory",
+        "bulk import",
+        "streaming",
+        "data pipeline",
+        "batch job"
+      ]
+    },
+    {
+      "incident_id": "INC-021",
+      "title": "CPU Throttling Causing API Latency Spikes",
+      "service": "User Profile Service",
+      "category": "CPU",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-07T15:33:00Z",
+      "description": "API response times spiked due to CPU throttling on containerized workloads.",
+      "symptoms": [
+        "High p99 latency",
+        "CPU throttling metric elevated",
+        "Increased request queue depth"
+      ],
+      "logs": [
+        "WARN: container CPU throttled 45% of periods",
+        "INFO: request queue depth increasing"
+      ],
+      "affected_components": [
+        "User Profile Service Pods",
+        "Kubernetes CPU Manager"
+      ],
+      "root_cause": "CPU limits were set too conservatively relative to actual workload demand, causing frequent throttling.",
+      "resolution": [
+        "Increase CPU limits",
+        "Scale out additional replicas",
+        "Restart affected pods"
+      ],
+      "preventive_actions": [
+        "Right-size CPU requests/limits based on load testing",
+        "Add throttling alerts",
+        "Enable horizontal pod autoscaling on CPU"
+      ],
+      "impact": "API latency increased 3x for approximately 30 minutes.",
+      "status": "Resolved",
+      "resolution_time": "30 minutes",
+      "keywords": [
+        "cpu",
+        "throttling",
+        "kubernetes",
+        "latency",
+        "scaling"
+      ]
+    },
+    {
+      "incident_id": "INC-022",
+      "title": "Runaway Background Job Consuming All CPU",
+      "service": "Image Processing Service",
+      "category": "CPU",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-07T22:46:00Z",
+      "description": "A background image processing job entered an infinite loop, consuming all available CPU on its host.",
+      "symptoms": [
+        "CPU usage at 100% sustained",
+        "Other jobs on host delayed",
+        "Image processing queue backing up"
+      ],
+      "logs": [
+        "WARN: process consuming 100% CPU for 20 minutes",
+        "ERROR: job exceeded max execution time"
+      ],
+      "affected_components": [
+        "Image Processing Worker",
+        "Host Server"
+      ],
+      "root_cause": "A bug in image resizing logic caused an infinite retry loop on malformed input files.",
+      "resolution": [
+        "Kill runaway process",
+        "Deploy hotfix for input validation",
+        "Restart image processing service"
+      ],
+      "preventive_actions": [
+        "Add strict input validation for uploaded files",
+        "Set maximum execution time for jobs",
+        "Add CPU usage alerting per process"
+      ],
+      "impact": "Image processing queue backed up for over 6,000 items during 45 minutes.",
+      "status": "Resolved",
+      "resolution_time": "45 minutes",
+      "keywords": [
+        "cpu",
+        "infinite loop",
+        "image processing",
+        "runaway process",
+        "validation"
+      ]
+    },
+    {
+      "incident_id": "INC-023",
+      "title": "High CPU from Inefficient Regex in Log Parser",
+      "service": "Logging Pipeline",
+      "category": "CPU",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-08T05:59:00Z",
+      "description": "A newly deployed log parsing rule caused catastrophic backtracking, spiking CPU usage across log processing nodes.",
+      "symptoms": [
+        "CPU usage above 90% on log processors",
+        "Log ingestion delay increasing",
+        "Parser worker restarts"
+      ],
+      "logs": [
+        "WARN: regex execution time 8000ms",
+        "ERROR: worker restarted due to high CPU"
+      ],
+      "affected_components": [
+        "Log Parsing Service",
+        "Regex Engine"
+      ],
+      "root_cause": "A regex pattern with nested quantifiers caused catastrophic backtracking on certain log lines.",
+      "resolution": [
+        "Disable problematic parsing rule",
+        "Rewrite regex to avoid backtracking",
+        "Redeploy log parser"
+      ],
+      "preventive_actions": [
+        "Add regex complexity linting in CI",
+        "Test parsing rules against production-like log samples",
+        "Set execution timeouts for parsing rules"
+      ],
+      "impact": "Log ingestion was delayed by up to 25 minutes.",
+      "status": "Resolved",
+      "resolution_time": "25 minutes",
+      "keywords": [
+        "cpu",
+        "regex",
+        "logging",
+        "backtracking",
+        "performance"
+      ]
+    },
+    {
+      "incident_id": "INC-024",
+      "title": "Noisy Neighbor Causing CPU Contention",
+      "service": "Multiple Services",
+      "category": "CPU",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-08T13:12:00Z",
+      "description": "A batch analytics workload co-located on shared nodes caused CPU contention affecting latency-sensitive services.",
+      "symptoms": [
+        "Increased latency across co-located services",
+        "High CPU steal time",
+        "Uneven pod performance"
+      ],
+      "logs": [
+        "WARN: CPU steal time 30%",
+        "INFO: analytics batch job running on shared node pool"
+      ],
+      "affected_components": [
+        "Shared Node Pool",
+        "Batch Analytics Job"
+      ],
+      "root_cause": "Batch analytics workloads were scheduled on the same node pool as latency-sensitive services without CPU isolation.",
+      "resolution": [
+        "Move batch job to dedicated node pool",
+        "Apply CPU requests/limits to isolate workloads",
+        "Reschedule affected pods"
+      ],
+      "preventive_actions": [
+        "Use node taints/tolerations to separate batch and latency-sensitive workloads",
+        "Add CPU steal time monitoring",
+        "Review scheduling policies quarterly"
+      ],
+      "impact": "Latency-sensitive services saw 2x response time increase for 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "cpu",
+        "noisy neighbor",
+        "contention",
+        "scheduling",
+        "kubernetes"
+      ]
+    },
+    {
+      "incident_id": "INC-025",
+      "title": "CPU Spike from Unoptimized JSON Serialization",
+      "service": "Search API",
+      "category": "CPU",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-08T20:25:00Z",
+      "description": "A code change introduced inefficient JSON serialization, significantly increasing CPU usage per request.",
+      "symptoms": [
+        "Elevated CPU usage after deployment",
+        "Increased response times",
+        "Higher instance count required to serve same traffic"
+      ],
+      "logs": [
+        "INFO: deployment v2.14.0 rolled out",
+        "WARN: CPU usage increased 40% post-deploy"
+      ],
+      "affected_components": [
+        "Search API",
+        "Serialization Library"
+      ],
+      "root_cause": "A new response formatting library used reflection-based serialization instead of the previous optimized encoder.",
+      "resolution": [
+        "Roll back to previous serialization library",
+        "Redeploy search API",
+        "Verify CPU metrics return to baseline"
+      ],
+      "preventive_actions": [
+        "Add performance regression tests to CI pipeline",
+        "Benchmark serialization libraries before adoption",
+        "Monitor CPU per request as a deployment gate"
+      ],
+      "impact": "Search API required 40% more compute capacity for 2 hours before rollback.",
+      "status": "Resolved",
+      "resolution_time": "2 hours",
+      "keywords": [
+        "cpu",
+        "serialization",
+        "performance regression",
+        "deployment",
+        "search"
+      ]
+    },
+    {
+      "incident_id": "INC-026",
+      "title": "Autoscaler Failing to Scale Out Under CPU Load",
+      "service": "Checkout Service",
+      "category": "CPU",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-09T03:38:00Z",
+      "description": "CPU usage on checkout pods reached capacity but the horizontal pod autoscaler failed to add replicas.",
+      "symptoms": [
+        "Sustained high CPU usage",
+        "No new pods created despite high load",
+        "Increasing request latency"
+      ],
+      "logs": [
+        "ERROR: unable to fetch metrics from metrics-server",
+        "WARN: HPA target CPU utilization 95%"
+      ],
+      "affected_components": [
+        "Horizontal Pod Autoscaler",
+        "Metrics Server"
+      ],
+      "root_cause": "Metrics server became unresponsive, preventing the HPA from receiving CPU metrics needed to scale.",
+      "resolution": [
+        "Restart metrics server",
+        "Manually scale up replica count",
+        "Verify HPA resumes normal operation"
+      ],
+      "preventive_actions": [
+        "Add health checks and alerting for metrics server",
+        "Set minimum replica count as a safety floor",
+        "Test HPA failure scenarios periodically"
+      ],
+      "impact": "Checkout latency was elevated for 35 minutes during peak traffic.",
+      "status": "Resolved",
+      "resolution_time": "35 minutes",
+      "keywords": [
+        "cpu",
+        "autoscaler",
+        "metrics server",
+        "hpa",
+        "scaling"
+      ]
+    },
+    {
+      "incident_id": "INC-027",
+      "title": "CPU Saturation from Cron Job Overlap",
+      "service": "Batch Processing Service",
+      "category": "CPU",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-09T10:51:00Z",
+      "description": "Two scheduled cron jobs overlapped in execution, saturating available CPU on the batch processing cluster.",
+      "symptoms": [
+        "CPU usage at 100% across cluster",
+        "Job execution times doubling",
+        "Job queue backlog growing"
+      ],
+      "logs": [
+        "INFO: job A started at 02:00",
+        "INFO: job B started at 02:00",
+        "WARN: cluster CPU utilization 100%"
+      ],
+      "affected_components": [
+        "Batch Processing Cluster",
+        "Cron Scheduler"
+      ],
+      "root_cause": "A recent schedule change caused two resource-intensive cron jobs to run at the same time.",
+      "resolution": [
+        "Stagger job schedules",
+        "Manually pause one job until the other completes",
+        "Resume normal scheduling"
+      ],
+      "preventive_actions": [
+        "Implement job scheduling conflict detection",
+        "Add resource reservation for scheduled jobs",
+        "Monitor cluster CPU during scheduled windows"
+      ],
+      "impact": "Batch processing was delayed by 1.5 hours.",
+      "status": "Resolved",
+      "resolution_time": "1.5 hours",
+      "keywords": [
+        "cpu",
+        "cron job",
+        "scheduling",
+        "batch processing",
+        "contention"
+      ]
+    },
+    {
+      "incident_id": "INC-028",
+      "title": "CPU Overload from DDoS-like Traffic Pattern",
+      "service": "Public API Gateway",
+      "category": "CPU",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-09T18:04:00Z",
+      "description": "A sudden surge of malformed requests caused CPU overload on API gateway instances.",
+      "symptoms": [
+        "CPU usage at 100% on gateway instances",
+        "Increased error rates",
+        "Legitimate requests timing out"
+      ],
+      "logs": [
+        "WARN: request rate 50x above baseline",
+        "ERROR: gateway instance unresponsive"
+      ],
+      "affected_components": [
+        "API Gateway",
+        "Rate Limiter"
+      ],
+      "root_cause": "A misconfigured client retry loop combined with insufficient rate limiting caused excessive CPU-intensive request parsing.",
+      "resolution": [
+        "Block offending client IP ranges",
+        "Tighten rate limiting rules",
+        "Scale out gateway instances temporarily"
+      ],
+      "preventive_actions": [
+        "Implement adaptive rate limiting",
+        "Add anomaly detection for traffic spikes",
+        "Set circuit breakers for abusive clients"
+      ],
+      "impact": "API availability dropped to 60% for approximately 20 minutes.",
+      "status": "Resolved",
+      "resolution_time": "20 minutes",
+      "keywords": [
+        "cpu",
+        "overload",
+        "rate limiting",
+        "api gateway",
+        "traffic spike"
+      ]
+    },
+    {
+      "incident_id": "INC-029",
+      "title": "High CPU Usage from Debug Logging Left Enabled",
+      "service": "Auth Service",
+      "category": "CPU",
+      "severity": "Low",
+      "environment": "Production",
+      "timestamp": "2026-06-10T01:17:00Z",
+      "description": "Verbose debug logging accidentally left enabled after a previous incident caused elevated CPU usage.",
+      "symptoms": [
+        "Sustained elevated CPU usage",
+        "Excessive log volume",
+        "Slightly increased response times"
+      ],
+      "logs": [
+        "INFO: log level set to DEBUG",
+        "WARN: log volume 10x normal baseline"
+      ],
+      "affected_components": [
+        "Auth Service",
+        "Logging Configuration"
+      ],
+      "root_cause": "Debug logging enabled during a prior troubleshooting session was never reverted to normal levels.",
+      "resolution": [
+        "Revert log level to INFO",
+        "Restart auth service instances",
+        "Verify CPU usage returns to baseline"
+      ],
+      "preventive_actions": [
+        "Add automatic expiration for temporary debug log settings",
+        "Include log level checks in deployment audits",
+        "Alert on prolonged elevated log volume"
+      ],
+      "impact": "Minor performance degradation over several hours, no user-facing impact reported.",
+      "status": "Resolved",
+      "resolution_time": "10 minutes",
+      "keywords": [
+        "cpu",
+        "logging",
+        "debug mode",
+        "configuration",
+        "auth"
+      ]
+    },
+    {
+      "incident_id": "INC-030",
+      "title": "CPU Contention During Live Migration of VMs",
+      "service": "Infrastructure Platform",
+      "category": "CPU",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-10T08:30:00Z",
+      "description": "Live migration of virtual machines during host maintenance caused temporary CPU contention affecting hosted services.",
+      "symptoms": [
+        "Brief latency spikes across hosted services",
+        "High CPU usage during migration window",
+        "Migration taking longer than expected"
+      ],
+      "logs": [
+        "INFO: live migration started for VM group A",
+        "WARN: CPU contention detected during migration"
+      ],
+      "affected_components": [
+        "Hypervisor",
+        "Virtual Machines"
+      ],
+      "root_cause": "Migrating multiple large VMs simultaneously during host maintenance oversaturated CPU resources on the destination host.",
+      "resolution": [
+        "Pause remaining migrations",
+        "Migrate VMs sequentially instead of in parallel",
+        "Resume maintenance after contention cleared"
+      ],
+      "preventive_actions": [
+        "Limit concurrent VM migrations per host",
+        "Schedule maintenance during lower-traffic windows",
+        "Add migration performance monitoring"
+      ],
+      "impact": "Brief latency spikes affected multiple services for about 15 minutes.",
+      "status": "Resolved",
+      "resolution_time": "15 minutes",
+      "keywords": [
+        "cpu",
+        "virtualization",
+        "live migration",
+        "contention",
+        "infrastructure"
+      ]
+    },
+    {
+      "incident_id": "INC-031",
+      "title": "CrashLoopBackOff After ConfigMap Update",
+      "service": "Auth Service",
+      "category": "Kubernetes",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-10T15:43:00Z",
+      "description": "Auth service pods entered CrashLoopBackOff after a ConfigMap change was applied.",
+      "symptoms": [
+        "Pods in CrashLoopBackOff",
+        "Repeated restarts",
+        "Auth requests failing"
+      ],
+      "logs": [
+        "ERROR: config key 'jwt_secret' not found",
+        "EVENT: Back-off restarting failed container"
+      ],
+      "affected_components": [
+        "Auth Service Pods",
+        "ConfigMap"
+      ],
+      "root_cause": "A required configuration key was accidentally removed during a ConfigMap update.",
+      "resolution": [
+        "Restore missing configuration key",
+        "Roll out updated ConfigMap",
+        "Restart affected pods"
+      ],
+      "preventive_actions": [
+        "Add schema validation for ConfigMaps in CI",
+        "Require peer review for ConfigMap changes",
+        "Add readiness probe checks for config presence"
+      ],
+      "impact": "Authentication was unavailable for 12 minutes.",
+      "status": "Resolved",
+      "resolution_time": "12 minutes",
+      "keywords": [
+        "kubernetes",
+        "configmap",
+        "crashloopbackoff",
+        "auth",
+        "deployment"
+      ]
+    },
+    {
+      "incident_id": "INC-032",
+      "title": "Pods Stuck in Pending Due to Insufficient Resources",
+      "service": "Analytics Service",
+      "category": "Kubernetes",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-10T22:56:00Z",
+      "description": "New analytics service pods remained in Pending state and failed to schedule.",
+      "symptoms": [
+        "Pods stuck in Pending",
+        "Scheduler events showing insufficient resources",
+        "Delayed rollout"
+      ],
+      "logs": [
+        "EVENT: 0/12 nodes are available: insufficient cpu",
+        "WARN: pod scheduling delayed"
+      ],
+      "affected_components": [
+        "Kubernetes Scheduler",
+        "Node Pool"
+      ],
+      "root_cause": "The node pool did not have enough available capacity for the requested resource specification, and the cluster autoscaler was not configured for this node pool.",
+      "resolution": [
+        "Manually scale up node pool",
+        "Adjust resource requests to fit available capacity",
+        "Verify pods scheduled successfully"
+      ],
+      "preventive_actions": [
+        "Enable cluster autoscaler for all node pools",
+        "Set resource quotas per namespace",
+        "Add scheduling failure alerts"
+      ],
+      "impact": "Deployment rollout was delayed by 40 minutes.",
+      "status": "Resolved",
+      "resolution_time": "40 minutes",
+      "keywords": [
+        "kubernetes",
+        "scheduling",
+        "pending pods",
+        "autoscaler",
+        "resources"
+      ]
+    },
+    {
+      "incident_id": "INC-033",
+      "title": "Ingress Controller Crash Causing Site-Wide 502s",
+      "service": "Ingress Controller",
+      "category": "Kubernetes",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-11T06:09:00Z",
+      "description": "The cluster ingress controller crashed, resulting in 502 errors across nearly all public endpoints.",
+      "symptoms": [
+        "Widespread HTTP 502 errors",
+        "Ingress controller pod restarts",
+        "Health checks failing"
+      ],
+      "logs": [
+        "ERROR: ingress-nginx-controller panic: runtime error",
+        "EVENT: liveness probe failed"
+      ],
+      "affected_components": [
+        "Ingress Controller",
+        "Load Balancer"
+      ],
+      "root_cause": "A malformed Ingress resource with an invalid annotation caused the controller to panic on reload.",
+      "resolution": [
+        "Delete or fix the malformed Ingress resource",
+        "Restart ingress controller pods",
+        "Verify traffic routing restored"
+      ],
+      "preventive_actions": [
+        "Add validation webhook for Ingress resources",
+        "Implement canary rollout for ingress config changes",
+        "Add controller crash alerting"
+      ],
+      "impact": "Public-facing services returned errors for 18 minutes.",
+      "status": "Resolved",
+      "resolution_time": "18 minutes",
+      "keywords": [
+        "kubernetes",
+        "ingress",
+        "502",
+        "controller crash",
+        "validation"
+      ]
+    },
+    {
+      "incident_id": "INC-034",
+      "title": "Persistent Volume Claim Stuck in Pending",
+      "service": "Database Service",
+      "category": "Kubernetes",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-11T13:22:00Z",
+      "description": "A new database pod could not start because its PersistentVolumeClaim remained unbound.",
+      "symptoms": [
+        "Pod stuck in ContainerCreating",
+        "PVC status Pending",
+        "Database unavailable"
+      ],
+      "logs": [
+        "EVENT: waiting for a volume to be created",
+        "ERROR: no persistent volumes available for this claim"
+      ],
+      "affected_components": [
+        "Persistent Volume Claim",
+        "Storage Class"
+      ],
+      "root_cause": "The storage class's provisioner had reached a quota limit in the cloud provider account.",
+      "resolution": [
+        "Request quota increase from cloud provider",
+        "Free up unused volumes",
+        "Retry PVC binding"
+      ],
+      "preventive_actions": [
+        "Monitor storage quota usage",
+        "Set alerts before hitting provider limits",
+        "Automate cleanup of orphaned volumes"
+      ],
+      "impact": "Database pod remained down for 55 minutes.",
+      "status": "Resolved",
+      "resolution_time": "55 minutes",
+      "keywords": [
+        "kubernetes",
+        "pvc",
+        "storage",
+        "quota",
+        "database"
+      ]
+    },
+    {
+      "incident_id": "INC-035",
+      "title": "DaemonSet Rollout Breaking Node Networking",
+      "service": "Platform Networking",
+      "category": "Kubernetes",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-11T20:35:00Z",
+      "description": "An update to a network policy DaemonSet caused node-level networking failures cluster-wide.",
+      "symptoms": [
+        "Pods unable to reach each other",
+        "DNS resolution failures cluster-wide",
+        "DaemonSet pods crash looping"
+      ],
+      "logs": [
+        "ERROR: failed to setup network for sandbox",
+        "EVENT: DaemonSet pod CrashLoopBackOff"
+      ],
+      "affected_components": [
+        "CNI DaemonSet",
+        "Node Networking"
+      ],
+      "root_cause": "A new version of the CNI plugin DaemonSet had a bug that failed to initialize network interfaces on certain kernel versions.",
+      "resolution": [
+        "Roll back DaemonSet to previous version",
+        "Restart affected node network interfaces",
+        "Verify pod-to-pod connectivity"
+      ],
+      "preventive_actions": [
+        "Test CNI upgrades on canary nodes first",
+        "Pin kernel version compatibility checks",
+        "Add cluster-wide connectivity health checks"
+      ],
+      "impact": "Cross-service communication was disrupted cluster-wide for 25 minutes.",
+      "status": "Resolved",
+      "resolution_time": "25 minutes",
+      "keywords": [
+        "kubernetes",
+        "cni",
+        "daemonset",
+        "networking",
+        "rollout"
+      ]
+    },
+    {
+      "incident_id": "INC-036",
+      "title": "HPA Flapping Between Replica Counts",
+      "service": "Search Service",
+      "category": "Kubernetes",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-12T03:48:00Z",
+      "description": "The horizontal pod autoscaler rapidly scaled search service pods up and down, destabilizing performance.",
+      "symptoms": [
+        "Frequent scale up/down events",
+        "Inconsistent response times",
+        "Pod churn increasing restart counts"
+      ],
+      "logs": [
+        "EVENT: scaled up replica set to 12",
+        "EVENT: scaled down replica set to 4",
+        "WARN: HPA target metric unstable"
+      ],
+      "affected_components": [
+        "Horizontal Pod Autoscaler",
+        "Search Service"
+      ],
+      "root_cause": "The HPA was configured with an overly aggressive scaling policy and no stabilization window, reacting to normal metric noise.",
+      "resolution": [
+        "Add stabilization window to HPA config",
+        "Adjust target metric thresholds",
+        "Apply updated HPA configuration"
+      ],
+      "preventive_actions": [
+        "Set appropriate scale-down stabilization windows",
+        "Use custom metrics with smoothing",
+        "Review HPA behavior after config changes"
+      ],
+      "impact": "Search response times fluctuated for approximately 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "kubernetes",
+        "hpa",
+        "autoscaling",
+        "flapping",
+        "search"
+      ]
+    },
+    {
+      "incident_id": "INC-037",
+      "title": "Namespace Resource Quota Blocking Deployments",
+      "service": "Platform Team",
+      "category": "Kubernetes",
+      "severity": "Low",
+      "environment": "Staging",
+      "timestamp": "2026-06-12T11:01:00Z",
+      "description": "Developers were unable to deploy new pods in staging due to a resource quota limit being reached.",
+      "symptoms": [
+        "Deployment creation failing",
+        "Quota exceeded errors",
+        "Team blocked from testing"
+      ],
+      "logs": [
+        "ERROR: exceeded quota: requests.cpu, requested: 2, used: 18, limited: 20"
+      ],
+      "affected_components": [
+        "Namespace Resource Quota",
+        "Staging Cluster"
+      ],
+      "root_cause": "Several stale test deployments were left running and consumed most of the namespace's CPU quota.",
+      "resolution": [
+        "Clean up stale test deployments",
+        "Increase namespace quota temporarily",
+        "Notify team of deployment cleanup policy"
+      ],
+      "preventive_actions": [
+        "Implement automatic cleanup of unused staging deployments",
+        "Set TTL on ephemeral test resources",
+        "Review namespace quotas monthly"
+      ],
+      "impact": "Staging deployments were blocked for approximately 2 hours.",
+      "status": "Resolved",
+      "resolution_time": "2 hours",
+      "keywords": [
+        "kubernetes",
+        "resource quota",
+        "staging",
+        "namespace",
+        "deployment"
+      ]
+    },
+    {
+      "incident_id": "INC-038",
+      "title": "etcd Latency Causing API Server Slowness",
+      "service": "Cluster Control Plane",
+      "category": "Kubernetes",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-12T18:14:00Z",
+      "description": "The Kubernetes API server became slow to respond due to high latency on the underlying etcd cluster.",
+      "symptoms": [
+        "Slow kubectl commands",
+        "API server timeouts",
+        "Controller reconciliation delays"
+      ],
+      "logs": [
+        "WARN: etcd request took too long",
+        "ERROR: apiserver_request_duration_seconds high"
+      ],
+      "affected_components": [
+        "etcd Cluster",
+        "Kubernetes API Server"
+      ],
+      "root_cause": "Disk I/O contention on the etcd nodes, caused by a co-located backup job, increased write latency beyond acceptable thresholds.",
+      "resolution": [
+        "Move backup job off etcd nodes",
+        "Restart etcd leader election",
+        "Verify API server latency returns to normal"
+      ],
+      "preventive_actions": [
+        "Dedicate disks for etcd with guaranteed IOPS",
+        "Isolate etcd nodes from other workloads",
+        "Monitor etcd latency metrics continuously"
+      ],
+      "impact": "Cluster operations were degraded for 30 minutes, delaying deployments and scaling actions.",
+      "status": "Resolved",
+      "resolution_time": "30 minutes",
+      "keywords": [
+        "kubernetes",
+        "etcd",
+        "control plane",
+        "latency",
+        "api server"
+      ]
+    },
+    {
+      "incident_id": "INC-039",
+      "title": "Node Not Ready Due to Kubelet Certificate Expiry",
+      "service": "Cluster Infrastructure",
+      "category": "Kubernetes",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-13T01:27:00Z",
+      "description": "Several worker nodes transitioned to NotReady status after kubelet client certificates expired.",
+      "symptoms": [
+        "Nodes showing NotReady",
+        "Pods evicted from affected nodes",
+        "Kubelet unable to communicate with API server"
+      ],
+      "logs": [
+        "ERROR: x509: certificate has expired or is not yet valid",
+        "EVENT: node status NotReady"
+      ],
+      "affected_components": [
+        "Kubelet",
+        "Node Certificates"
+      ],
+      "root_cause": "Automatic certificate rotation for kubelet client certificates had silently stopped working after a configuration change.",
+      "resolution": [
+        "Manually rotate kubelet certificates",
+        "Restart kubelet service on affected nodes",
+        "Verify nodes return to Ready status"
+      ],
+      "preventive_actions": [
+        "Monitor certificate expiration dates proactively",
+        "Test certificate rotation after cluster upgrades",
+        "Add alerting for certificate rotation failures"
+      ],
+      "impact": "Three worker nodes were unavailable for 50 minutes, reducing cluster capacity.",
+      "status": "Resolved",
+      "resolution_time": "50 minutes",
+      "keywords": [
+        "kubernetes",
+        "kubelet",
+        "certificates",
+        "node not ready",
+        "rotation"
+      ]
+    },
+    {
+      "incident_id": "INC-040",
+      "title": "Webhook Timeout Blocking All Pod Creation",
+      "service": "Cluster Admission Control",
+      "category": "Kubernetes",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-13T08:40:00Z",
+      "description": "An unresponsive admission webhook caused all new pod creation requests across the cluster to fail.",
+      "symptoms": [
+        "Pod creation requests timing out",
+        "Deployments stuck with zero new pods",
+        "Admission webhook errors in events"
+      ],
+      "logs": [
+        "ERROR: failed calling webhook: context deadline exceeded",
+        "EVENT: error creating pod: admission webhook denied"
+      ],
+      "affected_components": [
+        "Admission Webhook",
+        "API Server"
+      ],
+      "root_cause": "A mutating admission webhook service became unresponsive after a dependency outage, blocking the admission chain for all pod creations.",
+      "resolution": [
+        "Set webhook failurePolicy to Ignore temporarily",
+        "Restart the webhook service",
+        "Restore failurePolicy to Fail once healthy"
+      ],
+      "preventive_actions": [
+        "Set appropriate timeout and failurePolicy for all webhooks",
+        "Add high availability for webhook services",
+        "Monitor webhook latency and error rates"
+      ],
+      "impact": "No new pods could be created cluster-wide for 15 minutes.",
+      "status": "Resolved",
+      "resolution_time": "15 minutes",
+      "keywords": [
+        "kubernetes",
+        "admission webhook",
+        "pod creation",
+        "control plane",
+        "timeout"
+      ]
+    },
+    {
+      "incident_id": "INC-041",
+      "title": "DNS Resolution Failures Between Microservices",
+      "service": "Internal Service Mesh",
+      "category": "Networking",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-13T15:53:00Z",
+      "description": "Internal service-to-service calls began failing due to intermittent DNS resolution errors.",
+      "symptoms": [
+        "Intermittent 'no such host' errors",
+        "Increased retry counts",
+        "Elevated service error rates"
+      ],
+      "logs": [
+        "ERROR: dial tcp: lookup order-service on 10.0.0.10:53: no such host",
+        "WARN: DNS query timeout"
+      ],
+      "affected_components": [
+        "CoreDNS",
+        "Service Mesh"
+      ],
+      "root_cause": "CoreDNS pods were undersized for the query volume, causing dropped queries under load.",
+      "resolution": [
+        "Scale up CoreDNS replicas",
+        "Increase CoreDNS resource limits",
+        "Restart affected service connections"
+      ],
+      "preventive_actions": [
+        "Autoscale CoreDNS based on query volume",
+        "Enable local DNS caching (NodeLocal DNSCache)",
+        "Add DNS query latency monitoring"
+      ],
+      "impact": "Intermittent service call failures affected multiple services for 30 minutes.",
+      "status": "Resolved",
+      "resolution_time": "30 minutes",
+      "keywords": [
+        "networking",
+        "dns",
+        "coredns",
+        "service mesh",
+        "microservices"
+      ]
+    },
+    {
+      "incident_id": "INC-042",
+      "title": "Network Partition Between Availability Zones",
+      "service": "Platform Infrastructure",
+      "category": "Networking",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-13T23:06:00Z",
+      "description": "A network partition isolated one availability zone from the rest of the cluster.",
+      "symptoms": [
+        "Cross-zone requests timing out",
+        "Split-brain behavior in stateful services",
+        "Increased error rates in one zone"
+      ],
+      "logs": [
+        "ERROR: connection timeout to zone-b nodes",
+        "WARN: quorum lost in zone-b"
+      ],
+      "affected_components": [
+        "Cross-Zone Network Links",
+        "Stateful Services"
+      ],
+      "root_cause": "A misconfigured routing table update by the cloud provider caused traffic between two availability zones to be dropped.",
+      "resolution": [
+        "Escalate to cloud provider network team",
+        "Reroute traffic through healthy zone",
+        "Restore routing configuration once fixed"
+      ],
+      "preventive_actions": [
+        "Design services to gracefully handle zone partitions",
+        "Add cross-zone connectivity health checks",
+        "Maintain multi-region failover runbooks"
+      ],
+      "impact": "One availability zone was isolated for 40 minutes, degrading redundancy.",
+      "status": "Resolved",
+      "resolution_time": "40 minutes",
+      "keywords": [
+        "networking",
+        "availability zone",
+        "partition",
+        "routing",
+        "cloud provider"
+      ]
+    },
+    {
+      "incident_id": "INC-043",
+      "title": "Firewall Rule Change Blocking Outbound Traffic",
+      "service": "Payment Integration Service",
+      "category": "Networking",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-14T06:19:00Z",
+      "description": "A firewall rule update inadvertently blocked outbound calls to a third-party payment processor.",
+      "symptoms": [
+        "Connection refused errors to external API",
+        "Payment processing failures",
+        "Timeout errors in logs"
+      ],
+      "logs": [
+        "ERROR: connect: connection refused",
+        "WARN: outbound rule updated for CIDR range"
+      ],
+      "affected_components": [
+        "Firewall",
+        "Payment Integration Service"
+      ],
+      "root_cause": "A security group update removed an allow rule for the payment processor's IP range during a routine cleanup.",
+      "resolution": [
+        "Restore correct firewall allow rule",
+        "Verify outbound connectivity restored",
+        "Reprocess failed payment requests"
+      ],
+      "preventive_actions": [
+        "Require change review for firewall rule modifications",
+        "Add outbound connectivity monitoring for critical integrations",
+        "Maintain an allowlist inventory with owners"
+      ],
+      "impact": "Payment processing was unavailable for 20 minutes.",
+      "status": "Resolved",
+      "resolution_time": "20 minutes",
+      "keywords": [
+        "networking",
+        "firewall",
+        "outbound",
+        "payment",
+        "security group"
+      ]
+    },
+    {
+      "incident_id": "INC-044",
+      "title": "MTU Mismatch Causing Packet Fragmentation Issues",
+      "service": "Internal API Traffic",
+      "category": "Networking",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-14T13:32:00Z",
+      "description": "Certain large API requests were silently failing due to an MTU mismatch between network segments.",
+      "symptoms": [
+        "Intermittent request failures for large payloads",
+        "Packet loss on specific routes",
+        "No errors for small payloads"
+      ],
+      "logs": [
+        "WARN: packet fragmentation detected",
+        "ERROR: request timed out for payload >1400 bytes"
+      ],
+      "affected_components": [
+        "VPN Tunnel",
+        "Internal Network"
+      ],
+      "root_cause": "A newly established VPN tunnel had a lower MTU than the rest of the network, causing large packets to be dropped instead of fragmented.",
+      "resolution": [
+        "Adjust MTU settings on VPN tunnel",
+        "Enable proper path MTU discovery",
+        "Restart affected network interfaces"
+      ],
+      "preventive_actions": [
+        "Standardize MTU settings across all network links",
+        "Test large payload requests after network changes",
+        "Monitor for fragmentation and black-holed packets"
+      ],
+      "impact": "Large API requests intermittently failed for about 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "networking",
+        "mtu",
+        "fragmentation",
+        "vpn",
+        "packet loss"
+      ]
+    },
+    {
+      "incident_id": "INC-045",
+      "title": "BGP Route Flapping Causing Intermittent Outages",
+      "service": "Network Infrastructure",
+      "category": "Networking",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-14T20:45:00Z",
+      "description": "Unstable BGP routes caused intermittent connectivity loss between data center and cloud environments.",
+      "symptoms": [
+        "Intermittent connectivity drops",
+        "BGP session flapping alerts",
+        "Increased latency and packet loss"
+      ],
+      "logs": [
+        "WARN: BGP neighbor down",
+        "WARN: BGP neighbor up",
+        "ERROR: route withdrawn and re-advertised repeatedly"
+      ],
+      "affected_components": [
+        "BGP Router",
+        "Hybrid Cloud Link"
+      ],
+      "root_cause": "A faulty network interface on a peering router caused unstable BGP session resets.",
+      "resolution": [
+        "Failover to secondary peering link",
+        "Replace faulty network interface",
+        "Restore primary link after hardware repair"
+      ],
+      "preventive_actions": [
+        "Implement redundant BGP peering with automatic failover",
+        "Add BGP session stability monitoring",
+        "Schedule regular hardware health checks"
+      ],
+      "impact": "Intermittent connectivity issues affected hybrid cloud traffic for 1.5 hours.",
+      "status": "Resolved",
+      "resolution_time": "1.5 hours",
+      "keywords": [
+        "networking",
+        "bgp",
+        "routing",
+        "peering",
+        "outage"
+      ]
+    },
+    {
+      "incident_id": "INC-046",
+      "title": "Service Mesh mTLS Certificate Rotation Failure",
+      "service": "Service Mesh",
+      "category": "Networking",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-15T03:58:00Z",
+      "description": "Failed automatic mTLS certificate rotation caused service-to-service calls to be rejected across the mesh.",
+      "symptoms": [
+        "TLS handshake failures between services",
+        "Increased 5xx errors mesh-wide",
+        "Certificate expiry warnings"
+      ],
+      "logs": [
+        "ERROR: x509: certificate signed by unknown authority",
+        "WARN: certificate rotation job failed"
+      ],
+      "affected_components": [
+        "Service Mesh Control Plane",
+        "mTLS Certificates"
+      ],
+      "root_cause": "The certificate rotation job failed silently due to an expired root CA credential used for signing new certificates.",
+      "resolution": [
+        "Renew root CA credential",
+        "Manually trigger certificate rotation",
+        "Restart affected service mesh sidecars"
+      ],
+      "preventive_actions": [
+        "Add expiry alerts for root CA credentials",
+        "Monitor certificate rotation job success/failure",
+        "Add pre-expiry rotation buffer time"
+      ],
+      "impact": "Service-to-service calls failed intermittently for 25 minutes.",
+      "status": "Resolved",
+      "resolution_time": "25 minutes",
+      "keywords": [
+        "networking",
+        "mtls",
+        "service mesh",
+        "certificates",
+        "rotation"
+      ]
+    },
+    {
+      "incident_id": "INC-047",
+      "title": "Network Latency Spike from Misconfigured QoS Policy",
+      "service": "Video Streaming Service",
+      "category": "Networking",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-15T11:11:00Z",
+      "description": "A quality-of-service policy misconfiguration deprioritized streaming traffic, causing buffering for users.",
+      "symptoms": [
+        "Increased buffering reports",
+        "Higher latency on streaming traffic",
+        "Lower throughput for video packets"
+      ],
+      "logs": [
+        "WARN: QoS policy applied lower priority to port range 8000-8100",
+        "INFO: streaming traffic latency increased"
+      ],
+      "affected_components": [
+        "Network QoS Policy",
+        "Streaming Service"
+      ],
+      "root_cause": "A QoS policy update intended for a different port range accidentally deprioritized the streaming service's traffic class.",
+      "resolution": [
+        "Revert QoS policy change",
+        "Reapply correct traffic priority settings",
+        "Verify streaming latency returns to normal"
+      ],
+      "preventive_actions": [
+        "Add staging validation for QoS policy changes",
+        "Document port range ownership clearly",
+        "Monitor per-service traffic priority metrics"
+      ],
+      "impact": "Streaming quality was degraded for approximately 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "networking",
+        "qos",
+        "latency",
+        "streaming",
+        "misconfiguration"
+      ]
+    },
+    {
+      "incident_id": "INC-048",
+      "title": "Split Brain in Load Balancer Cluster",
+      "service": "Edge Load Balancer",
+      "category": "Networking",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-15T18:24:00Z",
+      "description": "A network partition between load balancer nodes caused a split-brain scenario with conflicting virtual IP ownership.",
+      "symptoms": [
+        "Intermittent connection resets",
+        "Duplicate VIP announcements",
+        "Inconsistent routing behavior"
+      ],
+      "logs": [
+        "WARN: VRRP split-brain detected",
+        "ERROR: duplicate ARP announcement for VIP"
+      ],
+      "affected_components": [
+        "Load Balancer Cluster",
+        "VRRP Configuration"
+      ],
+      "root_cause": "A brief network partition between load balancer nodes caused both nodes to believe they were the active VRRP master.",
+      "resolution": [
+        "Manually force one node into backup state",
+        "Restore network connectivity between nodes",
+        "Verify single active master restored"
+      ],
+      "preventive_actions": [
+        "Add a dedicated heartbeat network path for VRRP",
+        "Implement fencing to prevent split-brain",
+        "Monitor VRRP state transitions"
+      ],
+      "impact": "Intermittent connection resets affected users for 15 minutes.",
+      "status": "Resolved",
+      "resolution_time": "15 minutes",
+      "keywords": [
+        "networking",
+        "split brain",
+        "vrrp",
+        "load balancer",
+        "partition"
+      ]
+    },
+    {
+      "incident_id": "INC-049",
+      "title": "Proxy Misconfiguration Causing Cross-Tenant Data Leak Risk",
+      "service": "API Gateway Proxy",
+      "category": "Networking",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-16T01:37:00Z",
+      "description": "A reverse proxy misconfiguration briefly routed some requests to the wrong backend tenant environment.",
+      "symptoms": [
+        "Reports of unexpected data in responses",
+        "Routing anomalies in access logs",
+        "Alerts from anomaly detection system"
+      ],
+      "logs": [
+        "WARN: unexpected upstream selected for tenant-a request",
+        "ERROR: routing table mismatch detected"
+      ],
+      "affected_components": [
+        "Reverse Proxy",
+        "Tenant Routing Table"
+      ],
+      "root_cause": "A configuration deployment applied an outdated routing table that mapped one tenant's requests to another tenant's backend.",
+      "resolution": [
+        "Roll back to correct routing configuration",
+        "Restart proxy instances",
+        "Audit logs for any misrouted requests"
+      ],
+      "preventive_actions": [
+        "Add automated tests for tenant routing configuration",
+        "Require staged rollout for routing table changes",
+        "Add anomaly detection for cross-tenant routing"
+      ],
+      "impact": "A small number of requests were misrouted for approximately 8 minutes before detection.",
+      "status": "Resolved",
+      "resolution_time": "8 minutes",
+      "keywords": [
+        "networking",
+        "proxy",
+        "routing",
+        "multi-tenant",
+        "security"
+      ]
+    },
+    {
+      "incident_id": "INC-050",
+      "title": "Intermittent Packet Loss on Data Center Uplink",
+      "service": "Core Network",
+      "category": "Networking",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-16T08:50:00Z",
+      "description": "Intermittent packet loss on a primary data center uplink caused sporadic timeouts across services.",
+      "symptoms": [
+        "Intermittent request timeouts",
+        "Elevated packet loss metrics",
+        "Inconsistent latency readings"
+      ],
+      "logs": [
+        "WARN: packet loss 4% on uplink-1",
+        "ERROR: request timeout after 3 retries"
+      ],
+      "affected_components": [
+        "Core Network Uplink",
+        "Edge Router"
+      ],
+      "root_cause": "A degraded transceiver on the uplink hardware caused intermittent packet loss under high traffic load.",
+      "resolution": [
+        "Failover traffic to secondary uplink",
+        "Replace degraded transceiver",
+        "Restore primary uplink after hardware fix"
+      ],
+      "preventive_actions": [
+        "Add proactive hardware health monitoring for transceivers",
+        "Ensure automatic failover is tested regularly",
+        "Track packet loss trends over time"
+      ],
+      "impact": "Sporadic timeouts affected multiple services for 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "networking",
+        "packet loss",
+        "uplink",
+        "hardware",
+        "failover"
+      ]
+    },
+    {
+      "incident_id": "INC-051",
+      "title": "SSO Login Failures After Identity Provider Outage",
+      "service": "Auth Gateway",
+      "category": "Authentication",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-16T16:03:00Z",
+      "description": "Users were unable to log in via single sign-on after the third-party identity provider experienced an outage.",
+      "symptoms": [
+        "Login failures for all SSO users",
+        "Timeout errors during authentication redirect",
+        "Spike in support tickets"
+      ],
+      "logs": [
+        "ERROR: identity provider returned 503",
+        "WARN: SSO callback timeout"
+      ],
+      "affected_components": [
+        "Auth Gateway",
+        "External Identity Provider"
+      ],
+      "root_cause": "The third-party identity provider experienced a regional outage, preventing SSO authentication requests from completing.",
+      "resolution": [
+        "Enable fallback local authentication temporarily",
+        "Monitor identity provider status page",
+        "Disable fallback once provider restored"
+      ],
+      "preventive_actions": [
+        "Implement a break-glass local login option",
+        "Add identity provider health checks with alerting",
+        "Document fallback authentication runbook"
+      ],
+      "impact": "SSO users could not log in for 45 minutes.",
+      "status": "Resolved",
+      "resolution_time": "45 minutes",
+      "keywords": [
+        "authentication",
+        "sso",
+        "identity provider",
+        "login",
+        "outage"
+      ]
+    },
+    {
+      "incident_id": "INC-052",
+      "title": "JWT Signing Key Rotation Broke Token Validation",
+      "service": "Auth Service",
+      "category": "Authentication",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-16T23:16:00Z",
+      "description": "A scheduled JWT signing key rotation caused existing tokens to fail validation across services.",
+      "symptoms": [
+        "Widespread 401 Unauthorized errors",
+        "Token validation failures in logs",
+        "Users logged out unexpectedly"
+      ],
+      "logs": [
+        "ERROR: token signature verification failed",
+        "WARN: new signing key not yet propagated to all services"
+      ],
+      "affected_components": [
+        "Auth Service",
+        "JWKS Endpoint"
+      ],
+      "root_cause": "Downstream services cached the old JWKS public keys and had not refreshed before the old signing key was retired.",
+      "resolution": [
+        "Temporarily restore old signing key",
+        "Force downstream services to refresh JWKS cache",
+        "Retire old key after propagation confirmed"
+      ],
+      "preventive_actions": [
+        "Implement overlapping key validity windows during rotation",
+        "Reduce JWKS cache TTL",
+        "Add monitoring for token validation failure rates"
+      ],
+      "impact": "Users across multiple services were logged out for 20 minutes.",
+      "status": "Resolved",
+      "resolution_time": "20 minutes",
+      "keywords": [
+        "authentication",
+        "jwt",
+        "key rotation",
+        "jwks",
+        "401"
+      ]
+    },
+    {
+      "incident_id": "INC-053",
+      "title": "OAuth Token Refresh Loop Locking Out Users",
+      "service": "Mobile App Backend",
+      "category": "Authentication",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-17T06:29:00Z",
+      "description": "A bug in token refresh logic caused mobile clients to enter a refresh loop, eventually locking users out.",
+      "symptoms": [
+        "Repeated token refresh requests",
+        "Users forced to re-login frequently",
+        "Increased load on auth endpoint"
+      ],
+      "logs": [
+        "WARN: refresh token reused before expiry",
+        "ERROR: refresh token invalidated due to reuse detection"
+      ],
+      "affected_components": [
+        "OAuth Service",
+        "Mobile App Backend"
+      ],
+      "root_cause": "A race condition in the mobile app caused simultaneous refresh requests, triggering reuse detection and invalidating valid tokens.",
+      "resolution": [
+        "Deploy mobile app hotfix to serialize refresh requests",
+        "Temporarily relax reuse detection sensitivity",
+        "Restore normal reuse detection after fix verified"
+      ],
+      "preventive_actions": [
+        "Add mutex/lock around token refresh in mobile client",
+        "Add telemetry for refresh token reuse events",
+        "Load test refresh flow under concurrent conditions"
+      ],
+      "impact": "Approximately 8% of mobile users experienced repeated logouts over 2 hours.",
+      "status": "Resolved",
+      "resolution_time": "2 hours",
+      "keywords": [
+        "authentication",
+        "oauth",
+        "refresh token",
+        "mobile",
+        "race condition"
+      ]
+    },
+    {
+      "incident_id": "INC-054",
+      "title": "Brute Force Attack Triggering Account Lockouts",
+      "service": "Auth Service",
+      "category": "Authentication",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-17T13:42:00Z",
+      "description": "A coordinated brute force attack caused legitimate users to be locked out due to aggressive lockout thresholds.",
+      "symptoms": [
+        "Spike in failed login attempts",
+        "Increased account lockout notifications",
+        "Support tickets from locked-out users"
+      ],
+      "logs": [
+        "WARN: failed login attempts from distributed IP range",
+        "INFO: account locked after 5 failed attempts"
+      ],
+      "affected_components": [
+        "Auth Service",
+        "Account Lockout Policy"
+      ],
+      "root_cause": "An attacker used a distributed credential stuffing attack, and the lockout policy did not distinguish between attacker and victim accounts effectively.",
+      "resolution": [
+        "Enable CAPTCHA challenge for suspicious login patterns",
+        "Block offending IP ranges",
+        "Manually unlock affected legitimate accounts"
+      ],
+      "preventive_actions": [
+        "Implement adaptive rate limiting based on IP reputation",
+        "Add anomaly detection for credential stuffing patterns",
+        "Review lockout policy thresholds"
+      ],
+      "impact": "Several hundred legitimate users were temporarily locked out over 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "authentication",
+        "brute force",
+        "lockout",
+        "credential stuffing",
+        "security"
+      ]
+    },
+    {
+      "incident_id": "INC-055",
+      "title": "Session Token Expiry Misconfigured After Deployment",
+      "service": "Web Application",
+      "category": "Authentication",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-17T20:55:00Z",
+      "description": "A deployment set session token expiry far shorter than intended, causing frequent unexpected logouts.",
+      "symptoms": [
+        "Users logged out every few minutes",
+        "Increased login attempt volume",
+        "Complaints about frequent re-authentication"
+      ],
+      "logs": [
+        "INFO: session TTL set to 300s",
+        "WARN: unusually high re-authentication rate"
+      ],
+      "affected_components": [
+        "Session Management Service",
+        "Configuration"
+      ],
+      "root_cause": "A configuration default was accidentally used instead of the production value during deployment, setting session TTL far too low.",
+      "resolution": [
+        "Correct session TTL configuration",
+        "Redeploy web application",
+        "Verify session duration restored to expected value"
+      ],
+      "preventive_actions": [
+        "Add configuration validation checks in CI/CD",
+        "Alert on deployment configuration diffs from expected baseline",
+        "Include session TTL in deployment smoke tests"
+      ],
+      "impact": "Users experienced frequent logouts for 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "authentication",
+        "session",
+        "configuration",
+        "deployment",
+        "logout"
+      ]
+    },
+    {
+      "incident_id": "INC-056",
+      "title": "Multi-Factor Authentication Service Outage",
+      "service": "MFA Service",
+      "category": "Authentication",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-18T04:08:00Z",
+      "description": "The multi-factor authentication service became unavailable, blocking logins for accounts requiring MFA.",
+      "symptoms": [
+        "MFA challenge not delivered",
+        "Login stuck at verification step",
+        "Timeout errors for OTP requests"
+      ],
+      "logs": [
+        "ERROR: MFA provider request timed out",
+        "WARN: OTP delivery queue backed up"
+      ],
+      "affected_components": [
+        "MFA Service",
+        "SMS/OTP Provider Integration"
+      ],
+      "root_cause": "The third-party SMS provider used for OTP delivery experienced a capacity issue, delaying and dropping OTP messages.",
+      "resolution": [
+        "Switch to backup OTP provider",
+        "Notify affected users of delay",
+        "Restore primary provider once capacity issue resolved"
+      ],
+      "preventive_actions": [
+        "Implement multi-provider failover for OTP delivery",
+        "Add delivery latency monitoring",
+        "Offer authenticator app as alternative MFA method"
+      ],
+      "impact": "Users requiring MFA could not complete login for 35 minutes.",
+      "status": "Resolved",
+      "resolution_time": "35 minutes",
+      "keywords": [
+        "authentication",
+        "mfa",
+        "otp",
+        "sms provider",
+        "login"
+      ]
+    },
+    {
+      "incident_id": "INC-057",
+      "title": "Expired TLS Certificate on Auth Endpoint",
+      "service": "Auth Service",
+      "category": "Authentication",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-18T11:21:00Z",
+      "description": "An expired TLS certificate on the authentication endpoint caused all login requests to fail with certificate errors.",
+      "symptoms": [
+        "SSL/TLS handshake errors",
+        "Browser security warnings",
+        "Complete login failure across all clients"
+      ],
+      "logs": [
+        "ERROR: certificate has expired",
+        "WARN: certificate expiry date passed 2 hours ago"
+      ],
+      "affected_components": [
+        "Auth Endpoint",
+        "TLS Certificate"
+      ],
+      "root_cause": "Automated certificate renewal failed silently due to a DNS validation issue, and no alert was triggered before expiry.",
+      "resolution": [
+        "Manually renew and deploy new TLS certificate",
+        "Restart auth service to load new certificate",
+        "Verify successful login flows"
+      ],
+      "preventive_actions": [
+        "Add certificate expiry alerting at 30/14/7 days out",
+        "Fix DNS validation issue in renewal automation",
+        "Add synthetic login monitoring"
+      ],
+      "impact": "All logins failed for 25 minutes.",
+      "status": "Resolved",
+      "resolution_time": "25 minutes",
+      "keywords": [
+        "authentication",
+        "tls certificate",
+        "expiry",
+        "renewal",
+        "outage"
+      ]
+    },
+    {
+      "incident_id": "INC-058",
+      "title": "Permission Escalation Bug in Role Assignment",
+      "service": "Identity Management Service",
+      "category": "Authentication",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-18T18:34:00Z",
+      "description": "A bug in role assignment logic briefly granted elevated permissions to a subset of standard user accounts.",
+      "symptoms": [
+        "Unexpected admin-level access reports",
+        "Audit log anomalies",
+        "Security alert triggered by anomaly detection"
+      ],
+      "logs": [
+        "WARN: role 'admin' assigned to unexpected user group",
+        "ERROR: role assignment validation skipped"
+      ],
+      "affected_components": [
+        "Identity Management Service",
+        "Role Assignment Logic"
+      ],
+      "root_cause": "A recent code change removed a validation check that ensured role assignments matched an approved mapping table.",
+      "resolution": [
+        "Roll back the faulty code change",
+        "Revoke incorrectly assigned elevated permissions",
+        "Audit affected accounts for any unauthorized actions"
+      ],
+      "preventive_actions": [
+        "Add automated tests for role assignment validation",
+        "Require security review for permission-related code changes",
+        "Add real-time alerting for privilege escalation events"
+      ],
+      "impact": "A small number of accounts had elevated access for approximately 30 minutes before detection.",
+      "status": "Resolved",
+      "resolution_time": "30 minutes",
+      "keywords": [
+        "authentication",
+        "authorization",
+        "privilege escalation",
+        "identity management",
+        "security"
+      ]
+    },
+    {
+      "incident_id": "INC-059",
+      "title": "API Gateway Rate Limiting Misfiring on Legitimate Traffic",
+      "service": "Public API Gateway",
+      "category": "API Gateway",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-19T01:47:00Z",
+      "description": "Legitimate API clients began receiving HTTP 429 errors due to an overly aggressive rate limit rule.",
+      "symptoms": [
+        "Spike in 429 responses",
+        "Client integrations failing",
+        "Increased support tickets from partners"
+      ],
+      "logs": [
+        "WARN: rate limit exceeded for client_id=partner-123",
+        "INFO: rate limit rule updated"
+      ],
+      "affected_components": [
+        "API Gateway",
+        "Rate Limiting Policy"
+      ],
+      "root_cause": "A rate limit policy update lowered the per-client threshold far below what partner integrations required.",
+      "resolution": [
+        "Revert rate limit threshold to previous value",
+        "Whitelist affected partner temporarily",
+        "Communicate resolution to affected partners"
+      ],
+      "preventive_actions": [
+        "Require staged rollout for rate limit changes",
+        "Add per-client rate limit testing before deployment",
+        "Monitor 429 rate as a deployment health signal"
+      ],
+      "impact": "Partner integrations experienced failures for 30 minutes.",
+      "status": "Resolved",
+      "resolution_time": "30 minutes",
+      "keywords": [
+        "api gateway",
+        "rate limiting",
+        "429",
+        "partners",
+        "configuration"
+      ]
+    },
+    {
+      "incident_id": "INC-060",
+      "title": "API Gateway Outage Due to Certificate Expiry",
+      "service": "API Gateway",
+      "category": "API Gateway",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-19T09:00:00Z",
+      "description": "All API traffic through the gateway failed after its TLS certificate expired unexpectedly.",
+      "symptoms": [
+        "SSL handshake failures",
+        "Complete API unavailability",
+        "Client SDK connection errors"
+      ],
+      "logs": [
+        "ERROR: certificate has expired",
+        "WARN: certificate renewal job did not run"
+      ],
+      "affected_components": [
+        "API Gateway",
+        "TLS Certificate Management"
+      ],
+      "root_cause": "A certificate auto-renewal cron job was disabled during a maintenance window and never re-enabled.",
+      "resolution": [
+        "Manually issue and install new certificate",
+        "Restart gateway instances",
+        "Re-enable certificate renewal automation"
+      ],
+      "preventive_actions": [
+        "Add alerting for disabled renewal jobs",
+        "Add certificate expiry monitoring dashboard",
+        "Include renewal job status in maintenance checklists"
+      ],
+      "impact": "All API traffic failed for 15 minutes.",
+      "status": "Resolved",
+      "resolution_time": "15 minutes",
+      "keywords": [
+        "api gateway",
+        "tls",
+        "certificate expiry",
+        "renewal",
+        "outage"
+      ]
+    },
+    {
+      "incident_id": "INC-061",
+      "title": "API Gateway Memory Leak Causing Periodic Restarts",
+      "service": "API Gateway",
+      "category": "API Gateway",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-19T16:13:00Z",
+      "description": "Gateway instances required restarts every few hours due to gradual memory growth affecting performance.",
+      "symptoms": [
+        "Gradual memory increase over time",
+        "Increased latency before restart",
+        "Scheduled restarts masking underlying issue"
+      ],
+      "logs": [
+        "WARN: memory usage 92% of container limit",
+        "INFO: gateway instance restarted automatically"
+      ],
+      "affected_components": [
+        "API Gateway",
+        "Plugin Middleware"
+      ],
+      "root_cause": "A custom logging plugin was not releasing memory for request/response buffers after each request.",
+      "resolution": [
+        "Disable faulty logging plugin",
+        "Deploy patched version of the plugin",
+        "Monitor memory usage post-fix"
+      ],
+      "preventive_actions": [
+        "Add memory profiling to gateway plugin development process",
+        "Set up automated memory leak detection tests",
+        "Review third-party and custom plugins periodically"
+      ],
+      "impact": "Brief latency spikes occurred every few hours until the fix was deployed.",
+      "status": "Resolved",
+      "resolution_time": "3 hours",
+      "keywords": [
+        "api gateway",
+        "memory leak",
+        "plugin",
+        "restarts",
+        "performance"
+      ]
+    },
+    {
+      "incident_id": "INC-062",
+      "title": "Incorrect Routing Rule Sending Traffic to Deprecated Service",
+      "service": "API Gateway",
+      "category": "API Gateway",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-19T23:26:00Z",
+      "description": "A routing configuration error sent a portion of API traffic to a deprecated backend service that was no longer maintained.",
+      "symptoms": [
+        "Unexpected error responses from deprecated endpoints",
+        "Increased 500 errors",
+        "Data inconsistency reports from clients"
+      ],
+      "logs": [
+        "WARN: request routed to deprecated-service-v1",
+        "ERROR: deprecated-service-v1 returned 500"
+      ],
+      "affected_components": [
+        "API Gateway Routing Table",
+        "Deprecated Backend Service"
+      ],
+      "root_cause": "A routing rule referencing the deprecated service was never removed after the service was replaced, and a config reload reactivated it.",
+      "resolution": [
+        "Remove deprecated routing rule",
+        "Redirect traffic to current backend service",
+        "Reload gateway routing configuration"
+      ],
+      "preventive_actions": [
+        "Regularly audit and clean up routing configurations",
+        "Decommission deprecated services fully instead of leaving them dormant",
+        "Add routing configuration change review process"
+      ],
+      "impact": "A subset of API traffic received errors for approximately 20 minutes.",
+      "status": "Resolved",
+      "resolution_time": "20 minutes",
+      "keywords": [
+        "api gateway",
+        "routing",
+        "deprecated service",
+        "configuration",
+        "errors"
+      ]
+    },
+    {
+      "incident_id": "INC-063",
+      "title": "API Gateway CORS Misconfiguration Blocking Frontend",
+      "service": "API Gateway",
+      "category": "API Gateway",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-20T06:39:00Z",
+      "description": "A CORS policy update blocked legitimate cross-origin requests from the primary web frontend.",
+      "symptoms": [
+        "CORS errors in browser console",
+        "Frontend unable to fetch API data",
+        "Increased client-side error reports"
+      ],
+      "logs": [
+        "WARN: CORS policy updated to restrict origins",
+        "ERROR: request blocked by CORS policy"
+      ],
+      "affected_components": [
+        "API Gateway",
+        "CORS Policy"
+      ],
+      "root_cause": "A security hardening change to the CORS allowed-origins list omitted the production frontend domain.",
+      "resolution": [
+        "Add missing origin to CORS allowlist",
+        "Redeploy gateway configuration",
+        "Verify frontend functionality restored"
+      ],
+      "preventive_actions": [
+        "Add automated tests validating CORS configuration against known frontend origins",
+        "Require staging validation before CORS policy changes go to production",
+        "Document all approved origins centrally"
+      ],
+      "impact": "Frontend application was non-functional for 25 minutes.",
+      "status": "Resolved",
+      "resolution_time": "25 minutes",
+      "keywords": [
+        "api gateway",
+        "cors",
+        "frontend",
+        "configuration",
+        "security"
+      ]
+    },
+    {
+      "incident_id": "INC-064",
+      "title": "API Gateway Timeout Settings Causing Premature Request Termination",
+      "service": "API Gateway",
+      "category": "API Gateway",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-20T13:52:00Z",
+      "description": "Long-running but valid API requests were being terminated prematurely by the gateway's timeout settings.",
+      "symptoms": [
+        "504 Gateway Timeout errors",
+        "Reports of incomplete data exports failing",
+        "Increased retry traffic from clients"
+      ],
+      "logs": [
+        "ERROR: upstream request timed out after 30s",
+        "WARN: client retrying failed request"
+      ],
+      "affected_components": [
+        "API Gateway",
+        "Upstream Timeout Configuration"
+      ],
+      "root_cause": "A new bulk export feature required longer processing time than the gateway's default 30-second upstream timeout allowed.",
+      "resolution": [
+        "Increase upstream timeout for the export endpoint",
+        "Redeploy gateway configuration",
+        "Verify export requests complete successfully"
+      ],
+      "preventive_actions": [
+        "Set per-route timeout configurations based on expected processing time",
+        "Add load testing for new long-running endpoints before launch",
+        "Monitor 504 error rates by route"
+      ],
+      "impact": "Bulk export requests failed for approximately 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "api gateway",
+        "timeout",
+        "504",
+        "configuration",
+        "export"
+      ]
+    },
+    {
+      "incident_id": "INC-065",
+      "title": "API Key Validation Cache Serving Stale Revoked Keys",
+      "service": "API Gateway",
+      "category": "API Gateway",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-20T21:05:00Z",
+      "description": "A revoked API key continued to be accepted by the gateway due to a stale validation cache, posing a security risk.",
+      "symptoms": [
+        "Revoked key still authenticating successfully",
+        "Security alert from anomaly monitoring",
+        "Audit discrepancy between key store and gateway behavior"
+      ],
+      "logs": [
+        "WARN: API key validation served from cache",
+        "ERROR: revoked key accepted for request"
+      ],
+      "affected_components": [
+        "API Gateway",
+        "Key Validation Cache"
+      ],
+      "root_cause": "The API key validation cache had an excessively long TTL, allowing revoked keys to remain valid until cache expiry.",
+      "resolution": [
+        "Manually invalidate cache entries for revoked keys",
+        "Reduce cache TTL",
+        "Redeploy gateway configuration"
+      ],
+      "preventive_actions": [
+        "Implement cache invalidation events on key revocation",
+        "Reduce default cache TTL for security-sensitive data",
+        "Add periodic reconciliation between key store and cache"
+      ],
+      "impact": "A revoked key remained usable for approximately 40 minutes before being fully invalidated.",
+      "status": "Resolved",
+      "resolution_time": "40 minutes",
+      "keywords": [
+        "api gateway",
+        "api key",
+        "cache",
+        "revocation",
+        "security"
+      ]
+    },
+    {
+      "incident_id": "INC-066",
+      "title": "Gateway Overload from Missing Circuit Breaker",
+      "service": "API Gateway",
+      "category": "API Gateway",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-21T04:18:00Z",
+      "description": "A failing downstream service caused cascading failures at the API gateway due to a lack of circuit breaking.",
+      "symptoms": [
+        "Gateway response times increasing",
+        "Thread pool exhaustion at gateway",
+        "Errors propagating to unrelated endpoints"
+      ],
+      "logs": [
+        "WARN: downstream service response time 15000ms",
+        "ERROR: thread pool exhausted at gateway"
+      ],
+      "affected_components": [
+        "API Gateway",
+        "Downstream Service"
+      ],
+      "root_cause": "Requests to a degraded downstream service were not being circuit-broken, exhausting gateway thread pools and affecting unrelated traffic.",
+      "resolution": [
+        "Manually disable routing to the degraded downstream service",
+        "Deploy circuit breaker configuration",
+        "Restore routing once downstream service recovered"
+      ],
+      "preventive_actions": [
+        "Implement circuit breakers for all downstream dependencies",
+        "Add bulkhead isolation per backend service",
+        "Load test failure scenarios regularly"
+      ],
+      "impact": "Multiple unrelated API endpoints were degraded for 45 minutes.",
+      "status": "Resolved",
+      "resolution_time": "45 minutes",
+      "keywords": [
+        "api gateway",
+        "circuit breaker",
+        "cascading failure",
+        "resilience",
+        "overload"
+      ]
+    },
+    {
+      "incident_id": "INC-067",
+      "title": "Object Storage Bucket Reaching Rate Limit",
+      "service": "Media Upload Service",
+      "category": "Storage",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-21T11:31:00Z",
+      "description": "Uploads to the object storage bucket began failing due to hitting provider-imposed request rate limits.",
+      "symptoms": [
+        "Upload failures with throttling errors",
+        "Increased retry traffic",
+        "Slow upload completion times"
+      ],
+      "logs": [
+        "ERROR: 503 SlowDown: Please reduce your request rate",
+        "WARN: request rate exceeding bucket limit"
+      ],
+      "affected_components": [
+        "Object Storage Bucket",
+        "Media Upload Service"
+      ],
+      "root_cause": "A sudden increase in concurrent uploads exceeded the object storage provider's per-prefix request rate limit.",
+      "resolution": [
+        "Implement key prefix sharding to distribute load",
+        "Add exponential backoff for retries",
+        "Contact provider to raise rate limit"
+      ],
+      "preventive_actions": [
+        "Design object key naming to avoid hot prefixes",
+        "Add client-side upload rate throttling",
+        "Monitor storage request rates proactively"
+      ],
+      "impact": "Approximately 15% of uploads failed or were delayed for 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "storage",
+        "object storage",
+        "rate limit",
+        "throttling",
+        "uploads"
+      ]
+    },
+    {
+      "incident_id": "INC-068",
+      "title": "Storage Volume Full on File Processing Server",
+      "service": "Document Processing Service",
+      "category": "Storage",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-21T18:44:00Z",
+      "description": "A file processing server stopped accepting new jobs after its local storage volume filled up.",
+      "symptoms": [
+        "Job failures with disk full errors",
+        "Processing queue backlog growing",
+        "Server health checks failing"
+      ],
+      "logs": [
+        "ERROR: No space left on device",
+        "WARN: temp directory usage at 100%"
+      ],
+      "affected_components": [
+        "File Processing Server",
+        "Local Storage Volume"
+      ],
+      "root_cause": "Temporary files generated during document conversion were not being cleaned up after failed jobs, gradually filling the disk.",
+      "resolution": [
+        "Clear accumulated temporary files",
+        "Restart file processing service",
+        "Resume backlog processing"
+      ],
+      "preventive_actions": [
+        "Add automatic cleanup of temp files on job completion or failure",
+        "Add disk usage alerting at 80%",
+        "Move temp storage to auto-expiring volume"
+      ],
+      "impact": "Document processing was halted for 1 hour, delaying a backlog of jobs.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "storage",
+        "disk full",
+        "temp files",
+        "document processing",
+        "cleanup"
+      ]
+    },
+    {
+      "incident_id": "INC-069",
+      "title": "Data Corruption After Storage Array Firmware Update",
+      "service": "Primary Storage Array",
+      "category": "Storage",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-22T01:57:00Z",
+      "description": "A firmware update on the storage array introduced data corruption on a subset of volumes.",
+      "symptoms": [
+        "Checksum mismatch errors",
+        "Application-level data integrity alerts",
+        "Read errors on affected volumes"
+      ],
+      "logs": [
+        "ERROR: checksum verification failed for block range",
+        "WARN: firmware update completed with warnings"
+      ],
+      "affected_components": [
+        "Storage Array",
+        "Firmware"
+      ],
+      "root_cause": "A bug in the newly applied firmware version caused incorrect handling of certain write patterns, corrupting data on affected volumes.",
+      "resolution": [
+        "Roll back firmware to previous stable version",
+        "Restore affected volumes from backup",
+        "Validate data integrity post-restore"
+      ],
+      "preventive_actions": [
+        "Test firmware updates on non-production hardware first",
+        "Maintain frequent backups with integrity verification",
+        "Delay firmware adoption until vendor confirms stability"
+      ],
+      "impact": "A subset of data required restoration from backup, with 2 hours of processing delay.",
+      "status": "Resolved",
+      "resolution_time": "2 hours",
+      "keywords": [
+        "storage",
+        "firmware",
+        "data corruption",
+        "backup",
+        "restore"
+      ]
+    },
+    {
+      "incident_id": "INC-070",
+      "title": "Storage Latency Spike from RAID Rebuild",
+      "service": "Database Storage",
+      "category": "Storage",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-22T09:10:00Z",
+      "description": "A failed disk triggered a RAID rebuild that significantly increased storage latency for the database.",
+      "symptoms": [
+        "Elevated database query latency",
+        "High disk I/O wait times",
+        "RAID rebuild in progress alert"
+      ],
+      "logs": [
+        "WARN: RAID array rebuilding, degraded performance expected",
+        "INFO: disk 3 marked as failed"
+      ],
+      "affected_components": [
+        "RAID Array",
+        "Database Storage"
+      ],
+      "root_cause": "A physical disk failure triggered an automatic RAID rebuild, which consumed significant I/O bandwidth and slowed concurrent read/write operations.",
+      "resolution": [
+        "Replace failed disk",
+        "Throttle rebuild priority during peak hours",
+        "Monitor rebuild completion"
+      ],
+      "preventive_actions": [
+        "Schedule proactive disk replacement based on predictive failure analytics",
+        "Configure rebuild throttling for peak hours",
+        "Increase redundancy to reduce rebuild urgency"
+      ],
+      "impact": "Database query latency was elevated by 2-3x for 4 hours during the rebuild.",
+      "status": "Resolved",
+      "resolution_time": "4 hours",
+      "keywords": [
+        "storage",
+        "raid",
+        "disk failure",
+        "rebuild",
+        "latency"
+      ]
+    },
+    {
+      "incident_id": "INC-071",
+      "title": "Backup Storage Quota Exceeded, Halting Backups",
+      "service": "Backup Service",
+      "category": "Storage",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-22T16:23:00Z",
+      "description": "Scheduled backups failed after the backup storage account exceeded its allocated quota.",
+      "symptoms": [
+        "Backup job failures",
+        "Quota exceeded errors",
+        "No new backups created for 2 days before detection"
+      ],
+      "logs": [
+        "ERROR: storage quota exceeded, cannot write backup",
+        "WARN: backup retention cleanup job not running"
+      ],
+      "affected_components": [
+        "Backup Storage Account",
+        "Backup Retention Policy"
+      ],
+      "root_cause": "A retention cleanup job that removed old backups had silently failed weeks earlier, causing storage usage to grow unchecked until it hit quota.",
+      "resolution": [
+        "Manually delete expired backups",
+        "Fix and restart retention cleanup job",
+        "Re-run failed backup jobs"
+      ],
+      "preventive_actions": [
+        "Add monitoring and alerting for retention job execution success",
+        "Set storage quota usage alerts at 70/85%",
+        "Regularly audit backup retention compliance"
+      ],
+      "impact": "No successful backups were created for approximately 2 days.",
+      "status": "Resolved",
+      "resolution_time": "3 hours",
+      "keywords": [
+        "storage",
+        "backup",
+        "quota",
+        "retention",
+        "cleanup job"
+      ]
+    },
+    {
+      "incident_id": "INC-072",
+      "title": "Storage Class Misconfiguration Increasing Costs and Latency",
+      "service": "Data Lake Service",
+      "category": "Storage",
+      "severity": "Low",
+      "environment": "Production",
+      "timestamp": "2026-06-22T23:36:00Z",
+      "description": "Data intended for archival was mistakenly written to a standard high-performance storage class, and vice versa, causing cost and latency issues.",
+      "symptoms": [
+        "Unexpectedly high storage costs",
+        "Slow retrieval times for archival queries",
+        "Cost anomaly alert triggered"
+      ],
+      "logs": [
+        "INFO: object written with storage class STANDARD",
+        "WARN: archival query retrieval time 6 hours"
+      ],
+      "affected_components": [
+        "Data Lake",
+        "Storage Lifecycle Policy"
+      ],
+      "root_cause": "A lifecycle policy update incorrectly swapped the storage class rules for hot and cold data tiers.",
+      "resolution": [
+        "Correct storage lifecycle policy rules",
+        "Migrate misclassified objects to correct storage tier",
+        "Verify cost and latency return to expected levels"
+      ],
+      "preventive_actions": [
+        "Add validation tests for lifecycle policy changes",
+        "Review storage class assignments quarterly",
+        "Add cost anomaly alerting"
+      ],
+      "impact": "Increased costs and slow archival retrieval over several days before detection.",
+      "status": "Resolved",
+      "resolution_time": "1 day",
+      "keywords": [
+        "storage",
+        "lifecycle policy",
+        "storage class",
+        "cost",
+        "data lake"
+      ]
+    },
+    {
+      "incident_id": "INC-073",
+      "title": "NFS Mount Hanging Causing Application Freezes",
+      "service": "Shared File Service",
+      "category": "Storage",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-23T06:49:00Z",
+      "description": "Applications relying on an NFS mount experienced freezes when the NFS server became unresponsive.",
+      "symptoms": [
+        "Application processes stuck in uninterruptible sleep state",
+        "Timeouts on file read/write operations",
+        "Server load average spiking"
+      ],
+      "logs": [
+        "WARN: NFS server not responding",
+        "INFO: NFS server ok (after timeout)"
+      ],
+      "affected_components": [
+        "NFS Server",
+        "Shared File Mount"
+      ],
+      "root_cause": "A network blip caused the NFS server to become temporarily unreachable, and client-side mount options caused processes to hang indefinitely waiting for a response.",
+      "resolution": [
+        "Restart affected application processes",
+        "Adjust NFS mount options to use soft timeouts",
+        "Verify NFS server connectivity restored"
+      ],
+      "preventive_actions": [
+        "Use soft mount options with defined timeout and retry limits",
+        "Add NFS server availability monitoring",
+        "Consider migrating latency-sensitive workloads off NFS"
+      ],
+      "impact": "Application processes froze for up to 20 minutes across affected hosts.",
+      "status": "Resolved",
+      "resolution_time": "20 minutes",
+      "keywords": [
+        "storage",
+        "nfs",
+        "mount",
+        "hang",
+        "freeze"
+      ]
+    },
+    {
+      "incident_id": "INC-074",
+      "title": "Snapshot Restore Failure During Disaster Recovery Test",
+      "service": "Storage Platform",
+      "category": "Storage",
+      "severity": "Medium",
+      "environment": "Staging",
+      "timestamp": "2026-06-23T14:02:00Z",
+      "description": "A scheduled disaster recovery test revealed that storage snapshots could not be restored successfully.",
+      "symptoms": [
+        "Restore job failing with errors",
+        "Incomplete data after restore attempt",
+        "DR test failure report generated"
+      ],
+      "logs": [
+        "ERROR: snapshot restore failed: metadata mismatch",
+        "WARN: snapshot older than retention validation window"
+      ],
+      "affected_components": [
+        "Storage Snapshot System",
+        "Disaster Recovery Pipeline"
+      ],
+      "root_cause": "A change in the snapshot format from a recent storage platform upgrade was incompatible with the restore tooling still running the old version.",
+      "resolution": [
+        "Update restore tooling to match new snapshot format",
+        "Re-run disaster recovery test",
+        "Confirm successful data restoration"
+      ],
+      "preventive_actions": [
+        "Ensure restore tooling and storage platform versions are updated together",
+        "Run DR tests immediately after any storage platform upgrade",
+        "Add automated validation of snapshot restorability"
+      ],
+      "impact": "Disaster recovery test failed, requiring a follow-up test 1 day later.",
+      "status": "Resolved",
+      "resolution_time": "1 day",
+      "keywords": [
+        "storage",
+        "snapshot",
+        "disaster recovery",
+        "restore",
+        "compatibility"
+      ]
+    },
+    {
+      "incident_id": "INC-075",
+      "title": "Redis Cluster Failover Causing Cache Stampede",
+      "service": "Product Catalog Service",
+      "category": "Cache (Redis)",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-23T21:15:00Z",
+      "description": "A Redis cluster failover event caused a temporary cache outage, resulting in a stampede of requests directly to the database.",
+      "symptoms": [
+        "Sudden spike in database load",
+        "Increased API response times",
+        "Redis connection errors during failover window"
+      ],
+      "logs": [
+        "ERROR: READONLY You can't write against a read only replica",
+        "WARN: cluster failover in progress"
+      ],
+      "affected_components": [
+        "Redis Cluster",
+        "Product Catalog Database"
+      ],
+      "root_cause": "During Redis failover, the cache was briefly unavailable, and the application had no request coalescing or fallback, causing all cache-miss requests to hit the database simultaneously.",
+      "resolution": [
+        "Scale up database read capacity temporarily",
+        "Wait for Redis failover to complete",
+        "Verify cache hit rate returns to normal"
+      ],
+      "preventive_actions": [
+        "Implement request coalescing for cache misses",
+        "Add jittered cache expiration to avoid mass expiry",
+        "Add circuit breaker to protect database during cache outages"
+      ],
+      "impact": "Database load increased 5x, causing elevated latency for 20 minutes.",
+      "status": "Resolved",
+      "resolution_time": "20 minutes",
+      "keywords": [
+        "cache",
+        "redis",
+        "failover",
+        "cache stampede",
+        "database load"
+      ]
+    },
+    {
+      "incident_id": "INC-076",
+      "title": "Redis Eviction Removing Hot Keys Under Memory Pressure",
+      "service": "Session Cache",
+      "category": "Cache (Redis)",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-24T04:28:00Z",
+      "description": "Under memory pressure, Redis began evicting frequently accessed keys, degrading application performance.",
+      "symptoms": [
+        "Increased cache miss rate",
+        "Higher database query volume",
+        "Slower page load times"
+      ],
+      "logs": [
+        "WARN: evicted_keys counter increasing rapidly",
+        "INFO: used_memory approaching maxmemory"
+      ],
+      "affected_components": [
+        "Redis",
+        "Session Cache"
+      ],
+      "root_cause": "An LRU eviction policy combined with a recent surge in unique cache keys caused frequently accessed hot keys to be evicted alongside cold ones.",
+      "resolution": [
+        "Increase Redis maxmemory allocation",
+        "Adjust eviction policy to volatile-lru with proper TTLs",
+        "Restart affected application caches to rewarm"
+      ],
+      "preventive_actions": [
+        "Right-size Redis memory based on working set analysis",
+        "Separate hot and cold data into different cache instances",
+        "Monitor eviction rate as a key health metric"
+      ],
+      "impact": "Cache hit rate dropped from 95% to 60% for approximately 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "cache",
+        "redis",
+        "eviction",
+        "lru",
+        "hit rate"
+      ]
+    },
+    {
+      "incident_id": "INC-077",
+      "title": "Redis Cluster Split-Brain After Network Partition",
+      "service": "Rate Limiting Service",
+      "category": "Cache (Redis)",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-24T11:41:00Z",
+      "description": "A network partition caused a Redis cluster split-brain, leading to inconsistent rate limit counters across nodes.",
+      "symptoms": [
+        "Inconsistent rate limiting behavior",
+        "Cluster nodes reporting different master states",
+        "Some requests incorrectly rate limited or allowed"
+      ],
+      "logs": [
+        "WARN: cluster state inconsistent across nodes",
+        "ERROR: CLUSTERDOWN The cluster is down"
+      ],
+      "affected_components": [
+        "Redis Cluster",
+        "Rate Limiting Service"
+      ],
+      "root_cause": "A brief network partition between cluster nodes caused two nodes to independently believe they were master for the same hash slots.",
+      "resolution": [
+        "Manually resolve cluster state using redis-cli cluster fix",
+        "Restart affected cluster nodes",
+        "Verify consistent cluster state restored"
+      ],
+      "preventive_actions": [
+        "Ensure cluster nodes have redundant, low-latency network paths",
+        "Add cluster state consistency monitoring",
+        "Test failover and partition scenarios in staging regularly"
+      ],
+      "impact": "Rate limiting behaved inconsistently for approximately 25 minutes.",
+      "status": "Resolved",
+      "resolution_time": "25 minutes",
+      "keywords": [
+        "cache",
+        "redis",
+        "cluster",
+        "split-brain",
+        "rate limiting"
+      ]
+    },
+    {
+      "incident_id": "INC-078",
+      "title": "Slow Redis Command Blocking Event Loop",
+      "service": "Leaderboard Service",
+      "category": "Cache (Redis)",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-24T18:54:00Z",
+      "description": "A slow O(N) Redis command run against a very large data structure blocked the Redis event loop, delaying all other requests.",
+      "symptoms": [
+        "Sudden latency spike across all Redis operations",
+        "Increased application timeout errors",
+        "Single slow command visible in slowlog"
+      ],
+      "logs": [
+        "WARN: slowlog entry: ZRANGE leaderboard:global 0 -1 duration 4500ms",
+        "ERROR: Redis command timeout"
+      ],
+      "affected_components": [
+        "Redis",
+        "Leaderboard Service"
+      ],
+      "root_cause": "A leaderboard query fetched an entire large sorted set without pagination, blocking Redis's single-threaded event loop for several seconds.",
+      "resolution": [
+        "Kill the slow command",
+        "Redeploy leaderboard service with paginated queries",
+        "Verify latency returns to baseline"
+      ],
+      "preventive_actions": [
+        "Avoid unbounded ZRANGE/KEYS-style commands on large data structures",
+        "Add slowlog monitoring and alerting",
+        "Use SCAN-based iteration instead of blocking commands"
+      ],
+      "impact": "All Redis-dependent requests were delayed for approximately 10 minutes.",
+      "status": "Resolved",
+      "resolution_time": "10 minutes",
+      "keywords": [
+        "cache",
+        "redis",
+        "slow command",
+        "event loop",
+        "leaderboard"
+      ]
+    },
+    {
+      "incident_id": "INC-079",
+      "title": "Cache Invalidation Bug Serving Stale Pricing Data",
+      "service": "Pricing Service",
+      "category": "Cache (Redis)",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-25T02:07:00Z",
+      "description": "A bug in the cache invalidation logic caused updated prices to not be reflected in the cache, showing customers outdated prices.",
+      "symptoms": [
+        "Customers seeing outdated prices",
+        "Discrepancy between database and cache values",
+        "Support tickets about pricing mismatches"
+      ],
+      "logs": [
+        "WARN: cache invalidation event not published",
+        "INFO: price updated in database at 14:02"
+      ],
+      "affected_components": [
+        "Redis Cache",
+        "Pricing Service"
+      ],
+      "root_cause": "A recent refactor of the pricing update pipeline removed the call that published cache invalidation events after a database write.",
+      "resolution": [
+        "Manually flush affected cache keys",
+        "Deploy hotfix restoring the invalidation event call",
+        "Verify pricing consistency between cache and database"
+      ],
+      "preventive_actions": [
+        "Add integration tests verifying cache invalidation on data updates",
+        "Add monitoring comparing cache vs database values for critical data",
+        "Require code review focus on cache consistency for pricing changes"
+      ],
+      "impact": "Customers saw outdated prices for approximately 3 hours before detection.",
+      "status": "Resolved",
+      "resolution_time": "3 hours",
+      "keywords": [
+        "cache",
+        "redis",
+        "invalidation",
+        "pricing",
+        "stale data"
+      ]
+    },
+    {
+      "incident_id": "INC-080",
+      "title": "Redis Persistence (AOF) Corruption After Disk Failure",
+      "service": "Redis Primary",
+      "category": "Cache (Redis)",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-25T09:20:00Z",
+      "description": "A disk failure corrupted the append-only file used for Redis persistence, preventing Redis from restarting successfully.",
+      "symptoms": [
+        "Redis failing to start after crash",
+        "AOF corruption error in logs",
+        "Cache fully unavailable"
+      ],
+      "logs": [
+        "ERROR: Bad file format reading the append only file",
+        "FATAL: unable to load AOF, exiting"
+      ],
+      "affected_components": [
+        "Redis Primary",
+        "AOF Persistence File"
+      ],
+      "root_cause": "An underlying disk failure caused partial writes to the AOF file, leaving it in a corrupted, unparseable state.",
+      "resolution": [
+        "Use redis-check-aof to repair the corrupted file",
+        "Restart Redis with repaired AOF",
+        "Promote a healthy replica if repair is not viable"
+      ],
+      "preventive_actions": [
+        "Enable AOF fsync policies aligned with durability requirements",
+        "Add disk health monitoring for Redis hosts",
+        "Maintain up-to-date replicas for faster recovery"
+      ],
+      "impact": "Cache was completely unavailable for 30 minutes during recovery.",
+      "status": "Resolved",
+      "resolution_time": "30 minutes",
+      "keywords": [
+        "cache",
+        "redis",
+        "aof",
+        "persistence",
+        "corruption"
+      ]
+    },
+    {
+      "incident_id": "INC-081",
+      "title": "Redis Connection Exhaustion from Missing Connection Pooling",
+      "service": "Order Status Service",
+      "category": "Cache (Redis)",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-25T16:33:00Z",
+      "description": "A new service deployment created a new Redis connection per request instead of using a shared pool, exhausting available connections.",
+      "symptoms": [
+        "ERR max number of clients reached errors",
+        "Connection refused errors from application",
+        "Redis client count graph spiking"
+      ],
+      "logs": [
+        "ERROR: ERR max number of clients reached",
+        "WARN: connected_clients metric at configured maxclients limit"
+      ],
+      "affected_components": [
+        "Redis",
+        "Order Status Service"
+      ],
+      "root_cause": "A recent code change introduced a Redis client instantiation inside the request handler instead of reusing a shared connection pool.",
+      "resolution": [
+        "Roll back the faulty deployment",
+        "Fix code to use a shared connection pool",
+        "Redeploy with connection pooling restored"
+      ],
+      "preventive_actions": [
+        "Add code review checklist item for connection pool usage",
+        "Add connected_clients monitoring and alerting",
+        "Load test new services before production rollout"
+      ],
+      "impact": "Order status lookups failed intermittently for 20 minutes.",
+      "status": "Resolved",
+      "resolution_time": "20 minutes",
+      "keywords": [
+        "cache",
+        "redis",
+        "connection pooling",
+        "exhaustion",
+        "deployment"
+      ]
+    },
+    {
+      "incident_id": "INC-082",
+      "title": "Cross-Region Redis Replication Lag Affecting Failover Region",
+      "service": "Global Session Cache",
+      "category": "Cache (Redis)",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-25T23:46:00Z",
+      "description": "Cross-region replication lag on Redis caused the disaster recovery region to serve stale session data during a failover drill.",
+      "symptoms": [
+        "Stale session data in DR region",
+        "Replication lag alert triggered",
+        "Users in DR region seeing inconsistent state"
+      ],
+      "logs": [
+        "WARN: cross-region replication lag 12s exceeds threshold",
+        "INFO: failover drill initiated"
+      ],
+      "affected_components": [
+        "Redis Cross-Region Replication",
+        "Global Session Cache"
+      ],
+      "root_cause": "Increased write volume during the failover drill exceeded the available cross-region replication bandwidth, causing lag to build up.",
+      "resolution": [
+        "Pause non-critical write traffic during drill",
+        "Wait for replication lag to catch up",
+        "Resume normal operations after drill"
+      ],
+      "preventive_actions": [
+        "Increase replication bandwidth allocation",
+        "Add replication lag alerting with clear thresholds",
+        "Schedule failover drills during lower write-volume periods"
+      ],
+      "impact": "DR region session data was stale for approximately 15 minutes during the drill.",
+      "status": "Resolved",
+      "resolution_time": "15 minutes",
+      "keywords": [
+        "cache",
+        "redis",
+        "replication lag",
+        "disaster recovery",
+        "cross-region"
+      ]
+    },
+    {
+      "incident_id": "INC-083",
+      "title": "Bad Deployment Rollout Causing Full Service Outage",
+      "service": "Checkout Service",
+      "category": "Deployment",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-26T06:59:00Z",
+      "description": "A new deployment introduced a critical bug that caused the checkout service to crash on startup for all instances.",
+      "symptoms": [
+        "All pods crash looping after rollout",
+        "Complete checkout unavailability",
+        "Rollout health checks failing"
+      ],
+      "logs": [
+        "ERROR: panic: nil pointer dereference",
+        "EVENT: rollout status: progressing, 0/6 ready"
+      ],
+      "affected_components": [
+        "Checkout Service",
+        "CI/CD Pipeline"
+      ],
+      "root_cause": "A code change introduced a null pointer dereference in the startup initialization path that was not caught by existing test coverage.",
+      "resolution": [
+        "Roll back to previous stable deployment",
+        "Verify service recovery",
+        "Fix the bug and add regression test before redeploying"
+      ],
+      "preventive_actions": [
+        "Improve automated test coverage for startup paths",
+        "Use canary deployments to limit blast radius",
+        "Add automated rollback on failed health checks"
+      ],
+      "impact": "Checkout was completely unavailable for 10 minutes before rollback.",
+      "status": "Resolved",
+      "resolution_time": "10 minutes",
+      "keywords": [
+        "deployment",
+        "rollout",
+        "outage",
+        "rollback",
+        "crash"
+      ]
+    },
+    {
+      "incident_id": "INC-084",
+      "title": "Canary Deployment Skipped Due to Pipeline Misconfiguration",
+      "service": "Recommendation Service",
+      "category": "Deployment",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-26T14:12:00Z",
+      "description": "A pipeline misconfiguration caused a new version to be deployed directly to 100% of production traffic, bypassing the canary stage.",
+      "symptoms": [
+        "Full traffic shift without gradual rollout",
+        "Errors detected only after full deployment",
+        "No canary metrics collected"
+      ],
+      "logs": [
+        "INFO: deployment strategy set to 'direct' instead of 'canary'",
+        "WARN: error rate increased after full rollout"
+      ],
+      "affected_components": [
+        "CI/CD Pipeline",
+        "Deployment Strategy Configuration"
+      ],
+      "root_cause": "A recent pipeline template update reset the deployment strategy field to its default value, overriding the intended canary configuration.",
+      "resolution": [
+        "Roll back to previous version",
+        "Correct pipeline configuration to restore canary strategy",
+        "Redeploy using canary process"
+      ],
+      "preventive_actions": [
+        "Add validation checks for deployment strategy configuration in CI",
+        "Require explicit confirmation for non-canary deployments to production",
+        "Audit pipeline template changes"
+      ],
+      "impact": "Elevated error rates affected all users for approximately 15 minutes.",
+      "status": "Resolved",
+      "resolution_time": "15 minutes",
+      "keywords": [
+        "deployment",
+        "canary",
+        "pipeline",
+        "configuration",
+        "ci/cd"
+      ]
+    },
+    {
+      "incident_id": "INC-085",
+      "title": "Database Migration Incompatible with Previous App Version",
+      "service": "Orders Service",
+      "category": "Deployment",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-26T21:25:00Z",
+      "description": "A database migration was applied before the corresponding application code was fully rolled out, causing errors on old application instances.",
+      "symptoms": [
+        "Errors from instances still running old code",
+        "Column not found errors in logs",
+        "Partial service degradation during rollout"
+      ],
+      "logs": [
+        "ERROR: column 'discount_type' does not exist",
+        "INFO: migration applied at 09:00, deployment started 09:05"
+      ],
+      "affected_components": [
+        "Orders Database",
+        "Orders Service"
+      ],
+      "root_cause": "The migration removed a column still referenced by the previous application version, which was still serving traffic during the rolling deployment.",
+      "resolution": [
+        "Accelerate rollout to complete the deployment",
+        "Temporarily restore removed column as a compatibility shim",
+        "Complete rollout and remove shim afterward"
+      ],
+      "preventive_actions": [
+        "Follow expand-contract migration pattern for schema changes",
+        "Ensure migrations are backward-compatible with N-1 app version",
+        "Add migration compatibility checks to deployment process"
+      ],
+      "impact": "A subset of requests failed for approximately 12 minutes during rollout.",
+      "status": "Resolved",
+      "resolution_time": "12 minutes",
+      "keywords": [
+        "deployment",
+        "database migration",
+        "backward compatibility",
+        "rollout",
+        "schema"
+      ]
+    },
+    {
+      "incident_id": "INC-086",
+      "title": "Deployment Stuck Due to Failed Readiness Probe",
+      "service": "Inventory Service",
+      "category": "Deployment",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-27T04:38:00Z",
+      "description": "A new deployment stalled mid-rollout because new pods repeatedly failed their readiness probe.",
+      "symptoms": [
+        "Rollout stuck at partial completion",
+        "New pods never becoming Ready",
+        "Old and new pod versions running simultaneously for extended time"
+      ],
+      "logs": [
+        "EVENT: Readiness probe failed: HTTP probe failed with statuscode: 503",
+        "WARN: rollout paused, exceeded progress deadline"
+      ],
+      "affected_components": [
+        "Inventory Service",
+        "Readiness Probe Configuration"
+      ],
+      "root_cause": "A new dependency required additional startup time that exceeded the configured readiness probe initial delay, causing repeated failures.",
+      "resolution": [
+        "Increase readiness probe initial delay and timeout",
+        "Redeploy with corrected probe configuration",
+        "Verify rollout completes successfully"
+      ],
+      "preventive_actions": [
+        "Tune probe settings based on measured startup time under load",
+        "Add startup time regression tests",
+        "Monitor rollout duration against expected baseline"
+      ],
+      "impact": "Deployment rollout was delayed by 1 hour, though service remained available via old pods.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "deployment",
+        "readiness probe",
+        "rollout",
+        "kubernetes",
+        "configuration"
+      ]
+    },
+    {
+      "incident_id": "INC-087",
+      "title": "Secrets Not Updated Before Deployment Causing Auth Failures",
+      "service": "Billing Service",
+      "category": "Deployment",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-27T11:51:00Z",
+      "description": "A deployment referenced a new API credential that had not yet been provisioned in the secrets manager, causing authentication failures to a downstream billing provider.",
+      "symptoms": [
+        "Authentication failures to billing provider",
+        "Billing job failures after deployment",
+        "Secret not found errors"
+      ],
+      "logs": [
+        "ERROR: secret 'billing-api-key-v2' not found",
+        "INFO: deployment v3.2.0 rolled out at 11:00"
+      ],
+      "affected_components": [
+        "Billing Service",
+        "Secrets Manager"
+      ],
+      "root_cause": "The deployment process did not include a pre-deployment step verifying that all referenced secrets existed in the target environment.",
+      "resolution": [
+        "Provision the missing secret in secrets manager",
+        "Restart billing service pods",
+        "Verify billing provider authentication restored"
+      ],
+      "preventive_actions": [
+        "Add automated secret existence checks as a pre-deployment gate",
+        "Document secret provisioning as part of the release checklist",
+        "Add alerting for missing secret errors"
+      ],
+      "impact": "Billing jobs failed for approximately 40 minutes.",
+      "status": "Resolved",
+      "resolution_time": "40 minutes",
+      "keywords": [
+        "deployment",
+        "secrets",
+        "authentication",
+        "billing",
+        "release process"
+      ]
+    },
+    {
+      "incident_id": "INC-088",
+      "title": "Feature Flag Left Enabled Causing Unintended Behavior",
+      "service": "Marketing Site",
+      "category": "Deployment",
+      "severity": "Low",
+      "environment": "Production",
+      "timestamp": "2026-06-27T19:04:00Z",
+      "description": "A feature flag intended only for internal testing was accidentally left enabled in production after a deployment.",
+      "symptoms": [
+        "Unreleased UI elements visible to customers",
+        "Unexpected behavior reported by users",
+        "Feature flag audit revealed misconfiguration"
+      ],
+      "logs": [
+        "INFO: feature_flag 'new_checkout_banner' evaluated true for all users",
+        "WARN: flag intended for internal segment only"
+      ],
+      "affected_components": [
+        "Feature Flag Service",
+        "Marketing Site"
+      ],
+      "root_cause": "A feature flag targeting rule was misconfigured during deployment, applying the flag to all users instead of the internal testing segment.",
+      "resolution": [
+        "Correct feature flag targeting rule",
+        "Disable flag for general audience",
+        "Verify unintended UI elements no longer visible"
+      ],
+      "preventive_actions": [
+        "Add review step for feature flag targeting changes",
+        "Default new flags to disabled for all users until explicitly configured",
+        "Audit active feature flags periodically"
+      ],
+      "impact": "Unreleased UI was visible to all users for approximately 2 hours.",
+      "status": "Resolved",
+      "resolution_time": "2 hours",
+      "keywords": [
+        "deployment",
+        "feature flag",
+        "configuration",
+        "release management",
+        "ui"
+      ]
+    },
+    {
+      "incident_id": "INC-089",
+      "title": "Blue-Green Deployment Swap Left Traffic Split Inconsistently",
+      "service": "Search Service",
+      "category": "Deployment",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-28T02:17:00Z",
+      "description": "A blue-green deployment swap did not fully complete, leaving some load balancer targets pointing to the old environment.",
+      "symptoms": [
+        "Inconsistent search results depending on request",
+        "Some users seeing old version behavior",
+        "Load balancer target group partially updated"
+      ],
+      "logs": [
+        "WARN: target group update partially completed",
+        "INFO: 60% of traffic routed to green environment"
+      ],
+      "affected_components": [
+        "Load Balancer",
+        "Blue-Green Deployment Pipeline"
+      ],
+      "root_cause": "An API rate limit from the cloud provider caused the target group update to only partially apply before the deployment script reported success.",
+      "resolution": [
+        "Manually complete the target group update",
+        "Verify all traffic routed to the new environment",
+        "Decommission old blue environment"
+      ],
+      "preventive_actions": [
+        "Add verification step confirming 100% target group update before marking deployment successful",
+        "Add retries with backoff for cloud provider API rate limits",
+        "Monitor traffic split consistency during blue-green swaps"
+      ],
+      "impact": "Inconsistent search behavior affected a portion of users for 30 minutes.",
+      "status": "Resolved",
+      "resolution_time": "30 minutes",
+      "keywords": [
+        "deployment",
+        "blue-green",
+        "load balancer",
+        "traffic split",
+        "release"
+      ]
+    },
+    {
+      "incident_id": "INC-090",
+      "title": "Rollback Failure Due to Missing Previous Image Tag",
+      "service": "Notification Service",
+      "category": "Deployment",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-28T09:30:00Z",
+      "description": "An attempt to roll back a failed deployment failed because the previous container image had been garbage collected from the registry.",
+      "symptoms": [
+        "Rollback command failing",
+        "Image not found error",
+        "Service remained on broken version longer than expected"
+      ],
+      "logs": [
+        "ERROR: manifest for notification-service:v1.44.0 not found",
+        "WARN: image garbage collection removed tags older than 30 days"
+      ],
+      "affected_components": [
+        "Container Registry",
+        "Deployment Pipeline"
+      ],
+      "root_cause": "An overly aggressive image registry garbage collection policy removed the previous stable image tag before it could be used for rollback.",
+      "resolution": [
+        "Rebuild the previous version image from source control",
+        "Deploy rebuilt image as rollback",
+        "Verify service recovery"
+      ],
+      "preventive_actions": [
+        "Retain at least the last N stable image tags regardless of age",
+        "Tag known-good releases to exclude them from garbage collection",
+        "Test rollback procedures periodically"
+      ],
+      "impact": "The broken deployment remained live for an additional 35 minutes while the rollback image was rebuilt.",
+      "status": "Resolved",
+      "resolution_time": "35 minutes",
+      "keywords": [
+        "deployment",
+        "rollback",
+        "container registry",
+        "image tag",
+        "garbage collection"
+      ]
+    },
+    {
+      "incident_id": "INC-091",
+      "title": "Load Balancer Health Check Marking All Backends Unhealthy",
+      "service": "Web Frontend",
+      "category": "Load Balancer",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-28T16:43:00Z",
+      "description": "A misconfigured health check caused the load balancer to mark all healthy backend instances as unhealthy, taking the site offline.",
+      "symptoms": [
+        "All backend targets showing unhealthy",
+        "HTTP 503 Service Unavailable responses",
+        "Complete site outage"
+      ],
+      "logs": [
+        "ERROR: health check failed: HTTP 404",
+        "WARN: 0 of 8 targets healthy"
+      ],
+      "affected_components": [
+        "Load Balancer",
+        "Health Check Configuration"
+      ],
+      "root_cause": "A recent path change to the application removed the health check endpoint the load balancer was configured to probe, causing all targets to fail health checks.",
+      "resolution": [
+        "Update health check path to match new endpoint",
+        "Verify targets return to healthy state",
+        "Confirm site accessibility restored"
+      ],
+      "preventive_actions": [
+        "Include health check path validation in deployment testing",
+        "Coordinate application routing changes with load balancer configuration",
+        "Add alerting when healthy target count drops to zero"
+      ],
+      "impact": "Complete site outage for 8 minutes.",
+      "status": "Resolved",
+      "resolution_time": "8 minutes",
+      "keywords": [
+        "load balancer",
+        "health check",
+        "outage",
+        "503",
+        "configuration"
+      ]
+    },
+    {
+      "incident_id": "INC-092",
+      "title": "Uneven Traffic Distribution Overloading Single Backend",
+      "service": "API Backend Pool",
+      "category": "Load Balancer",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-28T23:56:00Z",
+      "description": "One backend instance received a disproportionate share of traffic, causing it to become overloaded while others remained idle.",
+      "symptoms": [
+        "High latency on one instance",
+        "Uneven CPU/memory usage across backend pool",
+        "Occasional timeouts from overloaded instance"
+      ],
+      "logs": [
+        "WARN: instance-3 request count 5x average",
+        "INFO: load balancing algorithm: round-robin with sticky sessions"
+      ],
+      "affected_components": [
+        "Load Balancer",
+        "Backend Pool"
+      ],
+      "root_cause": "Sticky session configuration combined with a long-lived connection from a high-volume client concentrated traffic onto a single backend instance.",
+      "resolution": [
+        "Disable sticky sessions temporarily",
+        "Manually rebalance connections across instances",
+        "Restart overloaded instance"
+      ],
+      "preventive_actions": [
+        "Use least-connections load balancing algorithm where sticky sessions are not required",
+        "Add per-instance load monitoring and alerting",
+        "Set connection limits per backend instance"
+      ],
+      "impact": "One instance experienced degraded performance for approximately 1 hour.",
+      "status": "Resolved",
+      "resolution_time": "1 hour",
+      "keywords": [
+        "load balancer",
+        "sticky sessions",
+        "uneven distribution",
+        "overload",
+        "backend pool"
+      ]
+    },
+    {
+      "incident_id": "INC-093",
+      "title": "SSL Termination Failure at Load Balancer",
+      "service": "Public Website",
+      "category": "Load Balancer",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-29T07:09:00Z",
+      "description": "A configuration error in SSL termination at the load balancer caused all HTTPS connections to fail.",
+      "symptoms": [
+        "SSL handshake failures for all users",
+        "Browser certificate errors",
+        "HTTP connections working but HTTPS failing"
+      ],
+      "logs": [
+        "ERROR: SSL_do_handshake failed",
+        "WARN: SSL certificate chain incomplete"
+      ],
+      "affected_components": [
+        "Load Balancer",
+        "SSL Termination Configuration"
+      ],
+      "root_cause": "An SSL certificate update was applied without including the full certificate chain, causing clients to reject the incomplete chain.",
+      "resolution": [
+        "Upload complete certificate chain including intermediate certificates",
+        "Reload load balancer SSL configuration",
+        "Verify HTTPS connections succeed"
+      ],
+      "preventive_actions": [
+        "Add automated validation of certificate chain completeness before deployment",
+        "Use certificate management automation with built-in chain validation",
+        "Add synthetic HTTPS monitoring"
+      ],
+      "impact": "All HTTPS traffic failed for 12 minutes.",
+      "status": "Resolved",
+      "resolution_time": "12 minutes",
+      "keywords": [
+        "load balancer",
+        "ssl",
+        "certificate chain",
+        "https",
+        "outage"
+      ]
+    },
+    {
+      "incident_id": "INC-094",
+      "title": "Load Balancer Connection Limit Reached During Traffic Surge",
+      "service": "Ticketing Platform",
+      "category": "Load Balancer",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-29T14:22:00Z",
+      "description": "A sudden surge in traffic during a popular ticket sale exceeded the load balancer's configured connection limit.",
+      "symptoms": [
+        "Connection refused errors during peak traffic",
+        "Users unable to load the ticketing page",
+        "Load balancer metrics showing connection limit reached"
+      ],
+      "logs": [
+        "ERROR: max connections reached, new connections refused",
+        "WARN: connection count at 100% of configured limit"
+      ],
+      "affected_components": [
+        "Load Balancer",
+        "Connection Limit Configuration"
+      ],
+      "root_cause": "The load balancer's maximum connection limit was configured based on typical traffic and was insufficient for the anticipated surge from the ticket sale event.",
+      "resolution": [
+        "Increase load balancer connection limit",
+        "Scale out additional load balancer capacity",
+        "Monitor connection counts during remaining sale period"
+      ],
+      "preventive_actions": [
+        "Perform capacity planning ahead of known high-traffic events",
+        "Load test with expected peak traffic before major launches",
+        "Set up autoscaling for load balancer capacity where supported"
+      ],
+      "impact": "A portion of users were unable to access the site for approximately 20 minutes during peak demand.",
+      "status": "Resolved",
+      "resolution_time": "20 minutes",
+      "keywords": [
+        "load balancer",
+        "connection limit",
+        "traffic surge",
+        "capacity planning",
+        "outage"
+      ]
+    },
+    {
+      "incident_id": "INC-095",
+      "title": "Cross-Zone Load Balancing Disabled Causing Uneven Zone Load",
+      "service": "Regional Services",
+      "category": "Load Balancer",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-06-29T21:35:00Z",
+      "description": "Cross-zone load balancing was found disabled, causing one availability zone to bear significantly more traffic than others.",
+      "symptoms": [
+        "Higher latency and error rates in one zone",
+        "Uneven CPU utilization across zones",
+        "Zone-specific capacity alerts triggered"
+      ],
+      "logs": [
+        "WARN: zone us-east-1a handling 70% of total traffic",
+        "INFO: cross_zone_load_balancing.enabled = false"
+      ],
+      "affected_components": [
+        "Load Balancer",
+        "Availability Zone Configuration"
+      ],
+      "root_cause": "A recent load balancer configuration change accidentally disabled cross-zone load balancing, causing traffic to be distributed unevenly based on the number of targets registered per zone.",
+      "resolution": [
+        "Re-enable cross-zone load balancing",
+        "Verify traffic distribution normalizes across zones",
+        "Monitor zone-level metrics post-fix"
+      ],
+      "preventive_actions": [
+        "Add configuration drift detection for load balancer settings",
+        "Include cross-zone balancing checks in infrastructure audits",
+        "Document required load balancer settings in infrastructure-as-code"
+      ],
+      "impact": "One availability zone experienced elevated latency for approximately 1.5 hours.",
+      "status": "Resolved",
+      "resolution_time": "1.5 hours",
+      "keywords": [
+        "load balancer",
+        "cross-zone",
+        "availability zone",
+        "traffic distribution",
+        "configuration"
+      ]
+    },
+    {
+      "incident_id": "INC-096",
+      "title": "DNS Provider Outage Causing Widespread Resolution Failures",
+      "service": "Public Website",
+      "category": "DNS",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-30T04:48:00Z",
+      "description": "The primary DNS provider experienced an outage, preventing users worldwide from resolving the company's domain names.",
+      "symptoms": [
+        "Users unable to reach the website",
+        "DNS resolution timeouts reported globally",
+        "Third-party status page confirming provider incident"
+      ],
+      "logs": [
+        "ERROR: DNS_PROBE_FINISHED_NXDOMAIN reported by users",
+        "INFO: provider status page reports ongoing incident"
+      ],
+      "affected_components": [
+        "External DNS Provider",
+        "Public Domain Records"
+      ],
+      "root_cause": "A regional outage at the primary DNS provider disrupted authoritative DNS resolution for the company's domains.",
+      "resolution": [
+        "Failover DNS to secondary provider",
+        "Monitor primary provider status for recovery",
+        "Switch back to primary provider once stable"
+      ],
+      "preventive_actions": [
+        "Maintain a secondary DNS provider with fast failover capability",
+        "Reduce DNS TTLs to enable faster failover in future incidents",
+        "Add external DNS resolution monitoring from multiple regions"
+      ],
+      "impact": "The website was unreachable for a significant portion of users for 35 minutes.",
+      "status": "Resolved",
+      "resolution_time": "35 minutes",
+      "keywords": [
+        "dns",
+        "outage",
+        "provider failure",
+        "failover",
+        "resolution"
+      ]
+    },
+    {
+      "incident_id": "INC-097",
+      "title": "Misconfigured DNS Record After Domain Migration",
+      "service": "Marketing Site",
+      "category": "DNS",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-06-30T12:01:00Z",
+      "description": "A DNS record misconfiguration during a domain migration caused the marketing site to become unreachable.",
+      "symptoms": [
+        "NXDOMAIN errors for marketing subdomain",
+        "Broken links from email campaigns",
+        "Site returning DNS errors instead of loading"
+      ],
+      "logs": [
+        "ERROR: NXDOMAIN for www.marketing.example.com",
+        "INFO: DNS zone migrated to new provider at 06:00"
+      ],
+      "affected_components": [
+        "DNS Zone Records",
+        "Marketing Site"
+      ],
+      "root_cause": "During migration to a new DNS provider, the CNAME record for the marketing subdomain was omitted from the imported zone file.",
+      "resolution": [
+        "Add missing CNAME record to new DNS zone",
+        "Verify propagation of corrected record",
+        "Confirm site accessibility restored"
+      ],
+      "preventive_actions": [
+        "Validate all DNS records are present after any zone migration using automated diffing",
+        "Test migrated DNS zones in a staging resolver before cutover",
+        "Maintain a checklist of critical DNS records to verify"
+      ],
+      "impact": "Marketing site was unreachable for approximately 50 minutes.",
+      "status": "Resolved",
+      "resolution_time": "50 minutes",
+      "keywords": [
+        "dns",
+        "migration",
+        "cname",
+        "misconfiguration",
+        "zone file"
+      ]
+    },
+    {
+      "incident_id": "INC-098",
+      "title": "DNS Cache Poisoning Alert Triggering Emergency Response",
+      "service": "Internal DNS Infrastructure",
+      "category": "DNS",
+      "severity": "Critical",
+      "environment": "Production",
+      "timestamp": "2026-06-30T19:14:00Z",
+      "description": "Monitoring detected anomalous DNS responses suggesting possible cache poisoning on an internal DNS resolver.",
+      "symptoms": [
+        "Unexpected IP addresses returned for known internal hostnames",
+        "Security alert from DNS anomaly detection",
+        "Some services connecting to unexpected endpoints"
+      ],
+      "logs": [
+        "WARN: DNS response for internal-service.local does not match expected record",
+        "ERROR: TTL anomaly detected on cached record"
+      ],
+      "affected_components": [
+        "Internal DNS Resolver",
+        "DNS Cache"
+      ],
+      "root_cause": "A misconfigured internal test tool sent forged DNS responses that were cached by the resolver due to insufficient response validation.",
+      "resolution": [
+        "Flush DNS resolver cache",
+        "Disable and investigate the misconfigured test tool",
+        "Restart DNS resolver service with enhanced validation enabled"
+      ],
+      "preventive_actions": [
+        "Enable DNSSEC validation where possible",
+        "Restrict which systems can send responses to internal resolvers",
+        "Add anomaly detection for unexpected DNS response changes"
+      ],
+      "impact": "A subset of internal services briefly connected to incorrect endpoints for about 10 minutes before detection.",
+      "status": "Resolved",
+      "resolution_time": "10 minutes",
+      "keywords": [
+        "dns",
+        "cache poisoning",
+        "security",
+        "internal infrastructure",
+        "anomaly detection"
+      ]
+    },
+    {
+      "incident_id": "INC-099",
+      "title": "TTL Misconfiguration Delaying DNS Failover",
+      "service": "Global Traffic Management",
+      "category": "DNS",
+      "severity": "Medium",
+      "environment": "Production",
+      "timestamp": "2026-07-01T02:27:00Z",
+      "description": "An overly long DNS TTL delayed failover to a healthy region during a regional outage, extending user impact.",
+      "symptoms": [
+        "Users continuing to resolve to the failed region long after failover was initiated",
+        "Delayed recovery despite healthy region being available",
+        "Support tickets from users in affected region"
+      ],
+      "logs": [
+        "INFO: DNS record TTL set to 3600s",
+        "WARN: failover initiated but old records still cached by resolvers"
+      ],
+      "affected_components": [
+        "DNS Records",
+        "Global Traffic Manager"
+      ],
+      "root_cause": "A DNS record TTL of one hour was configured for a critical failover record, causing many resolvers to continue serving cached (failed) endpoint data long after failover began.",
+      "resolution": [
+        "Wait for TTL expiration across resolvers",
+        "Communicate expected recovery time to affected users",
+        "Reduce TTL for future faster failover"
+      ],
+      "preventive_actions": [
+        "Set low TTLs (60s or less) for records involved in failover scenarios",
+        "Test failover timing regularly to validate propagation speed",
+        "Document expected failover time based on TTL settings"
+      ],
+      "impact": "Some users experienced extended outage of up to 55 minutes due to DNS caching.",
+      "status": "Resolved",
+      "resolution_time": "55 minutes",
+      "keywords": [
+        "dns",
+        "ttl",
+        "failover",
+        "traffic management",
+        "propagation"
+      ]
+    },
+    {
+      "incident_id": "INC-100",
+      "title": "Internal Service Discovery Failure Due to DNS SRV Record Error",
+      "service": "Internal Microservices",
+      "category": "DNS",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-07-01T09:40:00Z",
+      "description": "A malformed SRV record caused service discovery to fail for a critical internal microservice, disrupting dependent services.",
+      "symptoms": [
+        "Service discovery lookups failing",
+        "Dependent services unable to locate healthy instances",
+        "Increased connection errors between internal services"
+      ],
+      "logs": [
+        "ERROR: SRV record lookup returned no valid targets",
+        "WARN: malformed priority/weight fields in SRV record"
+      ],
+      "affected_components": [
+        "Internal DNS",
+        "Service Discovery"
+      ],
+      "root_cause": "An automated service registration script wrote an SRV record with invalid priority and weight fields after an update, making it unparseable by clients.",
+      "resolution": [
+        "Correct the malformed SRV record",
+        "Restart affected client connections to trigger re-resolution",
+        "Verify service discovery functioning normally"
+      ],
+      "preventive_actions": [
+        "Add validation for SRV record format in the registration script",
+        "Add automated tests for service discovery record correctness",
+        "Monitor service discovery lookup failure rates"
+      ],
+      "impact": "Dependent services experienced connectivity issues for approximately 20 minutes.",
+      "status": "Resolved",
+      "resolution_time": "20 minutes",
+      "keywords": [
+        "dns",
+        "srv record",
+        "service discovery",
+        "microservices",
+        "internal"
+      ]
+    }
+  ]
+}
