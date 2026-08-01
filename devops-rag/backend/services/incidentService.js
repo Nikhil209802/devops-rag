@@ -6,5 +6,11 @@ export function getAllIncidents() {
 
     const data = fs.readFileSync(filePath, "utf-8");
 
-    return JSON.parse(data);
+    return JSON.parse(data).incidents;
+}
+
+export function getIncidentById(id){
+const incidents = getAllIncidents();
+
+    return incidents.find(incident => incident.incident_id === id);
 }
