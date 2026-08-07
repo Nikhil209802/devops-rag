@@ -5,8 +5,8 @@
       "title": "Payment API Returning HTTP 503",
       "service": "Payment Service",
       "category": "Database",
-      "severity": "Critical",
-      "environment": "Production",
+      "severity": "Low",
+      "environment": "Testing",
       "timestamp": "2026-06-01T15:13:00Z",
       "description": "Users reported HTTP 503 errors while making online payments.",
       "symptoms": [
@@ -44,50 +44,6 @@
         "timeout",
         "payment",
         "postgres"
-      ]
-    },
-    {
-      "incident_id": "INC-002",
-      "title": "Replica Lag Causing Stale Reads",
-      "service": "Orders Service",
-      "category": "Database",
-      "severity": "High",
-      "environment": "Production",
-      "timestamp": "2026-06-01T22:26:00Z",
-      "description": "Read replicas fell significantly behind the primary, causing customers to see outdated order statuses.",
-      "symptoms": [
-        "Stale order status shown",
-        "Replica lag alert triggered",
-        "Increased customer complaints"
-      ],
-      "logs": [
-        "WARN: Replica lag 340s exceeds threshold",
-        "ERROR: Read query returned stale row"
-      ],
-      "affected_components": [
-        "MySQL Read Replica",
-        "Orders API"
-      ],
-      "root_cause": "A long-running analytics query on the replica blocked replication apply threads.",
-      "resolution": [
-        "Kill long-running analytics query",
-        "Move analytics workload to dedicated replica",
-        "Restart replication"
-      ],
-      "preventive_actions": [
-        "Route analytics queries to separate replica",
-        "Set query timeout limits",
-        "Alert on replica lag >30s"
-      ],
-      "impact": "Order status inaccuracies visible to ~2,000 users for 40 minutes.",
-      "status": "Resolved",
-      "resolution_time": "40 minutes",
-      "keywords": [
-        "database",
-        "replica",
-        "lag",
-        "mysql",
-        "stale reads"
       ]
     },
     {
@@ -4404,6 +4360,24 @@
         "microservices",
         "internal"
       ]
+    },
+    {
+      "incident_id": "INC-101",
+      "title": "Redis Cache Failure",
+      "service": "Cache Service",
+      "category": "Infrastructure",
+      "severity": "High",
+      "environment": "Production",
+      "timestamp": "2026-08-07T15:33:51.565Z",
+      "description": "Redis cache became unavailable.",
+      "symptoms": [],
+      "logs": [],
+      "affected_components": [],
+      "resolution": [],
+      "preventive_actions": [],
+      "status": "Open",
+      "resolution_time": null,
+      "keywords": []
     }
   ]
 }
