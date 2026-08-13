@@ -1,5 +1,5 @@
 import express from "express";
-import incidentRoutes from "./routes/Incident.js";
+import incidentRoutes from "./routes/incidents.js";
 import { connectDB } from "./config/db.js";
 
 const app = express();

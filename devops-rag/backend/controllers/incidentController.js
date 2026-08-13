@@ -1,42 +1,62 @@
 import * as incidentService from "../services/incidentService.js";
 
-export function getAllIncidents(req, res) {
-    const incidents = incidentService.getAllIncidents();
+export async function getAllIncidents(req, res) {
+    const incidents = await incidentService.getAllIncidents();
     res.json(incidents);
 }
-export function getIncidentById(req,res){
+export async function getIncidentById(req, res) {
     const id = req.params.id;
 
-    const incident = incidentService.getIncidentById(id);
+    const incident = await incidentService.getIncidentById(id);
 
-    if(!incident){
-        return res.status(404).json({message: "Incident not found"});
+    if (!incident) {
+        return res.status(404).json({
+            message: "Incident not found"
+        });
     }
+
     res.json(incident);
 }
-export function createIncident(req,res){
-    const incidentdata = req.body;
-    const newIncident = incidentService.createIncident(incidentdata);
-    res.status(201).json(newIncident);
+export async function createIncident(req, res) {
+    const incidentData = req.body;
 
+    const newIncident =
+        await incidentService.createIncident(incidentData);
+
+    res.status(201).json(newIncident);
 }
-export function updateIncident(req, res) {
+export async function updateIncident(req, res) {
+
     const id = req.params.id;
-    const incidentdata = req.body;
-    const updatedIncident = incidentService.updateIncident(id, incidentdata);
-    if(!updatedIncident){
-        return res.status(404).json({message: "Incident not found"});
+    const incidentData = req.body;
+
+    const updatedIncident =
+        await incidentService.updateIncident(id, incidentData);
+
+    if (!updatedIncident) {
+        return res.status(404).json({
+            message: "Incident not found"
+        });
     }
+
     res.json(updatedIncident);
 }
 
-export function deleteIncident(req,res){
+export async function deleteIncident(req, res) {
+
     const id = req.params.id;
-    const deletedIncident = incidentService.deleteIncident(id);
-    if(!deletedIncident){
-        return res.status(404).json({message: "Incident not found"});
+
+    const deletedIncident =
+        await incidentService.deleteIncident(id);
+
+    if (!deletedIncident) {
+        return res.status(404).json({
+            message: "Incident not found"
+        });
     }
-    res.json({message: "Incident deleted successfully",
-            incident: deletedIncident
+
+    res.json({
+        message: "Incident deleted successfully",
+        incident: deletedIncident
     });
 }

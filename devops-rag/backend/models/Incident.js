@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
 
 const incidentSchema = new mongoose.Schema({
-    incident_id: String,
+    incident_id: {
+        type:String,
+        unique:true
+    },
 
     title: String,
 
